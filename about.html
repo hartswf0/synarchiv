@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>SYNARCHIV | About</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root, :root.dark-theme {
+            /* Primary Colors */
+            --terminal-black: #1C1C1C;
+            --digital-green: #3CE8B3;
+            
+            /* Accent Colors */
+            --warm-amber: #FFC107;
+            --archive-cream: #EAE1C8;
+            
+            /* Supporting Colors */
+            --crt-glow-green: rgba(60, 232, 179, 0.4);
+            --crt-glow-amber: rgba(255, 193, 7, 0.4);
+            --paper-gray: #D8D3C8;
+            --terminal-dark: #252525;
+            --text-primary: #1C1C1C;
+            --text-secondary: #5A5A58;
+            --line-color: rgba(28, 28, 28, 0.25);
+            --line-accent: rgba(255, 193, 7, 0.7);
+        }
+        
+        :root.light-theme {
+            /* Light Theme Colors */
+            --terminal-black: #EAEAEA;
+            --digital-green: #005347;
+            --warm-amber: #994A00;
+            --archive-cream: #FFFFFF;
+            --crt-glow-green: rgba(0, 83, 71, 0.4);
+            --crt-glow-amber: rgba(153, 74, 0, 0.4);
+            --paper-gray: #F5F5F5;
+            --terminal-dark: #DEDEDE;
+            --text-primary: #1A1A1A;
+            --text-secondary: #333333;
+            --line-color: rgba(26, 26, 26, 0.3);
+            --line-accent: rgba(153, 74, 0, 0.7);
+        }
+        
+        /* Theme toggle styles */
+        .theme-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .toggle-label {
+            margin-left: 8px;
+            font-family: 'Inconsolata', monospace;
+            font-size: 0.7rem;
+            color: var(--digital-green);
+            text-shadow: 0 0 3px var(--crt-glow-green);
+        }
+        
+        /* The switch - the box around the slider */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        
+        /* Hide default HTML checkbox */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* The slider */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--terminal-black);
+            border: 1px solid var(--digital-green);
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 2px;
+            background-color: var(--digital-green);
+            -webkit-transition: .4s;
+            transition: .4s;
+            box-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        input:checked + .slider:before {
+            -webkit-transform: translateX(19px);
+            -ms-transform: translateX(19px);
+            transform: translateX(19px);
+        }
+        
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 20px;
+        }
+        
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--terminal-black);
+            font-family: 'Space Mono', monospace;
+            color: var(--archive-cream);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            letter-spacing: 0.02em;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/png;base64,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');
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(28, 28, 28, 0.03) 2px,
+                rgba(28, 28, 28, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+        
+        .container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        header {
+            background-color: var(--terminal-black);
+            padding: 25px 0;
+            border-bottom: 1px solid var(--line-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 2px solid var(--digital-green);
+            padding-bottom: 20px;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--digital-green);
+            box-shadow: 0 0 8px var(--crt-glow-green);
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Space Mono', monospace;
+            color: var(--digital-green);
+            letter-spacing: 0.15em;
+            margin-top: 0;
+            position: relative;
+            text-transform: uppercase;
+            font-weight: 400;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(60, 232, 179, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            letter-spacing: 3px;
+            color: var(--digital-green);
+            font-weight: 600;
+            font-family: 'Inconsolata', monospace;
+            text-transform: uppercase;
+            position: relative;
+            line-height: 1.2;
+            text-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: var(--terminal-black);
+            border: 1px solid var(--digital-green);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4), 0 0 5px var(--crt-glow-green);
+            position: relative;
+        }
+        
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent,
+                transparent 2px,
+                rgba(60, 232, 179, 0.05) 3px,
+                rgba(60, 232, 179, 0.05) 4px
+            );
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            font-family: 'Space Mono', monospace;
+            color: var(--archive-cream);
+            line-height: 1.7;
+            letter-spacing: 0.02em;
+            font-size: 0.95em;
+            text-align: justify;
+        }
+        
+        :root.light-theme p {
+            color: var(--text-primary);
+        }
+        
+        :root.light-theme .section {
+            background-color: var(--terminal-dark);
+            border: 1px solid var(--digital-green);
+        }
+        
+        :root.light-theme h2 {
+            color: var(--digital-green);
+        }
+        
+        :root.light-theme .back-link {
+            color: var(--digital-green);
+        }
+        
+        :root.light-theme .quote {
+            border-left-color: var(--digital-green);
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--digital-green);
+            text-decoration: none;
+            font-family: 'Inconsolata', monospace;
+            position: relative;
+            padding-left: 20px;
+            text-shadow: 0 0 3px var(--crt-glow-green);
+        }
+        
+        .back-link::before {
+            content: '←';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .quote {
+            border-left: 3px solid var(--digital-green);
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: var(--archive-cream);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.02em;
+            text-align: justify;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            .section {
+                padding: 15px;
+                margin: 15px 0;
+            }
+            
+            p {
+                font-size: 0.9rem;
+            }
+        }
+        
+        .character-flip {
+            display: inline-block;
+            min-width: 0.6em;
+            text-align: center;
+            animation: flipChar 0.5s ease-out forwards;
+            transform-origin: center center;
+            transform-style: preserve-3d;
+            opacity: 0;
+            letter-spacing: normal;
+        }
+        
+        @keyframes flipChar {
+            0% {
+                transform: rotateX(-90deg);
+                opacity: 0;
+            }
+            100% {
+                transform: rotateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Terminal elements */
+        .terminal-display {
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--digital-green);
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.02em;
+            box-shadow: 0 0 10px rgba(60, 232, 179, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .terminal-header {
+            color: var(--digital-green);
+            font-size: 1em;
+            margin-bottom: 5px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        .terminal-line {
+            color: var(--archive-cream);
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+        
+        .blink {
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 49% {
+                opacity: 1;
+            }
+            50%, 100% {
+                opacity: 0.3;
+            }
+        }
+        
+        .footer-terminal {
+            margin-top: 30px;
+            margin-bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        
+        /* Terminal effect for monospaced text */
+        .terminal-text {
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.02em;
+            line-height: 1.6;
+            border-left: 3px solid var(--digital-green);
+            padding-left: 15px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            color: var(--warm-amber);
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle">
+        <label class="switch">
+            <input type="checkbox" id="theme-switch">
+            <span class="slider round"></span>
+        </label>
+        <span class="toggle-label">LIGHT/DARK</span>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>SYNARCHIV</h1>
+            <div class="terminal-display">
+                <div class="terminal-header">MEMORY REMEDIATION DIVISION</div>
+                <div class="terminal-line">AUTHORIZATION LEVEL: PUBLIC MANIFEST</div>
+            </div>
+        </header>
+        
+        <a href="index.html" class="back-link">« RETURN TO DEPARTURE BOARD</a>
+        
+        <section class="section">
+            <h2>THE LUMIÈRE-LUHMANN ACCORD</h2>
+            <div class="terminal-text">[CLASSIFICATION: HISTORICAL RECORD]</div>
+            <p>SYNARCHIV traces its origin to an alternative-history summit known as the Lumière-Luhmann Accord of 1895. At the dawn of cinema, the Lumière brothers ("the Kinematograph, the photo learned to walk; the moving image now conquered the world") paired forces with early theorists of social order.</p>
+            <p>They foresaw a future where moving pictures and mass communication would blur collective memory. Auguste Lumière and a young Niklas Luhmann (then a child of a visionary bureaucrat) secretly agreed to found an institution governing what societies remember.</p>
+            <div class="quote">"We process memory the way railways process time."</div>
+            <p>With Luhmann's guidance, the Lumières implemented a pseudo-bureaucratic "Memory Service" that applied his theories: every film, photograph, and document would be categorized by a binary code (preserved/withheld) much like Luhmann's legal system uses legal/illegal.</p>
+        </section>
+        
+        <section class="section">
+            <h2>MEMORY REMEDIATION SYSTEM</h2>
+            <div class="terminal-text">[CLASSIFICATION: PROCEDURAL DOCUMENTATION]</div>
+            <p>SYNARCHIV's memory remediation system operates on principles of systems theory. Each memory artifact is subjected to binary distinction (archived vs. expunged, authorized vs. denied) to maintain order within the collective consciousness.</p>
+            <p>The records are periodically synchronized. All entries are processed overnight. Activation is scheduled according to registry pertinence. Memory retention policies are applied to all cultural data pursuant to the Lumière-Luhmann Accord of 1895.</p>
+            <p>Our interfaces (from retro command-line terminals to split-flap departures boards) remind users that they are interacting with an observer-embedded system, not a neutral repository. The blinking cursor and evolving digital display enact Heinz von Foerster's observer principle: as users navigate, the system acknowledges its own shaping of perception.</p>
+        </section>
+        
+        <section class="section">
+            <h2>VISUAL IDENTITY</h2>
+            <div class="terminal-text">[CLASSIFICATION: DESIGN PROTOCOL]</div>
+            <p>SYNARCHIV's visual identity blends retro-digital aesthetics with archival formalism. Our interfaces feature split-flap displays, terminal screens, and systematic typography that references both early computing and bureaucratic document design.</p>
+            <p>The primary green (var(--digital-green)) recalls early monochrome monitors while suggesting the permanent retention of records. Secondary amber (var(--warm-amber)) signals caution and is used for pending or transitional states in the memory archiving process.</p>
+            <p>Our typographic system employs monospaced fonts for technical information and departure schedules, with serif faces reserved for historical context and theoretical foundations.</p>
+        </section>
+        
+        <footer>
+            <div class="terminal-display footer-terminal">
+                <div class="terminal-line">SYNARCHIV INSTITUTE 2087-2093 | MEMORY REMEDIATION DIVISION</div>
+                <div class="terminal-line">DOCUMENT ID: SYNV-MANIFEST-2931-A</div>
+                <div class="terminal-line blink">END OF TRANSMISSION</div>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        // Theme toggle functionality
+        const themeSwitch = document.getElementById('theme-switch');
+        
+        // Check for saved theme preference or set default to dark
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.className = savedTheme + '-theme';
+        themeSwitch.checked = savedTheme === 'light';
+        
+        // Theme toggle event listener
+        themeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.className = 'light-theme';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.className = 'dark-theme';
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+        
+        // Animate text with split-flap effect
+        document.addEventListener('DOMContentLoaded', function() {
+            const paragraphs = document.querySelectorAll('p');
+            paragraphs.forEach((paragraph, paragraphIndex) => {
+                const text = paragraph.textContent;
+                paragraph.innerHTML = '';
+                
+                // Animate each character with a delay
+                for (let i = 0; i < text.length; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'character-flip';
+                    span.textContent = text[i];
+                    span.style.animationDelay = `${paragraphIndex * 0.1 + i * 0.003}s`;
+                    paragraph.appendChild(span);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

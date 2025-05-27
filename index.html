@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>SYNARCHIV | Collective Memory Remediation System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root, :root.dark-theme {
+            /* Primary Colors */
+            --terminal-black: #1C1C1C;
+            --digital-green: #3CE8B3;
+            
+            /* Accent Colors */
+            --warm-amber: #FFC107;
+            --archive-cream: #EAE1C8;
+            
+            /* Supporting Colors */
+            --crt-glow-green: rgba(60, 232, 179, 0.4);
+            --crt-glow-amber: rgba(255, 193, 7, 0.4);
+            --paper-gray: #D8D3C8;
+            --terminal-dark: #252525;
+            --text-primary: #1C1C1C;
+            --text-secondary: #5A5A58;
+            --line-color: rgba(28, 28, 28, 0.25);
+            --line-accent: rgba(255, 193, 7, 0.7);
+        }
+        
+        :root.light-theme {
+            /* Light Theme Colors */
+            --terminal-black: #EAEAEA;
+            --digital-green: #005347;
+            --warm-amber: #994A00;
+            --archive-cream: #FFFFFF;
+            --crt-glow-green: rgba(0, 83, 71, 0.4);
+            --crt-glow-amber: rgba(153, 74, 0, 0.4);
+            --paper-gray: #F5F5F5;
+            --terminal-dark: #DEDEDE;
+            --text-primary: #1A1A1A;
+            --text-secondary: #333333;
+            --line-color: rgba(26, 26, 26, 0.3);
+            --line-accent: rgba(153, 74, 0, 0.7);
+        }
+        
+        /* Theme toggle styles */
+        .theme-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .toggle-label {
+            margin-left: 8px;
+            font-family: 'Inconsolata', monospace;
+            font-size: 0.7rem;
+            color: var(--digital-green);
+            text-shadow: 0 0 3px var(--crt-glow-green);
+        }
+        
+        /* The switch - the box around the slider */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        
+        /* Hide default HTML checkbox */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* The slider */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--terminal-black);
+            border: 1px solid var(--digital-green);
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 2px;
+            background-color: var(--digital-green);
+            -webkit-transition: .4s;
+            transition: .4s;
+            box-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        input:checked + .slider:before {
+            -webkit-transform: translateX(19px);
+            -ms-transform: translateX(19px);
+            transform: translateX(19px);
+        }
+        
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 20px;
+        }
+        
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        
+        body {
+            font-family: 'EB Garamond', serif;
+            background: var(--archive-cream);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            letter-spacing: 0.02em;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/png;base64,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');
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(28, 28, 28, 0.03) 2px,
+                rgba(28, 28, 28, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+        
+        .container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(166, 61, 64, 0) 99.8%, rgba(166, 61, 64, 0.25) 99.9%);
+            background-size: 100% 25px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        
+        header {
+            background-color: var(--terminal-black);
+            padding: 25px 0 15px;
+            border-bottom: 1px solid var(--line-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--digital-green);
+            box-shadow: 0 0 8px var(--crt-glow-green);
+        }
+        
+        header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(60, 232, 179, 0.03) 2px,
+                rgba(60, 232, 179, 0.03) 4px
+            );
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        
+        .terminal-display {
+            background-color: var(--terminal-black);
+            border: 1px solid var(--digital-green);
+            padding: 15px 20px;
+            margin: 0 auto;
+            text-align: center;
+            font-family: 'Inconsolata', monospace;
+            max-width: 90%;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4), 0 0 5px var(--crt-glow-green);
+        }
+        
+        .terminal-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent,
+                transparent 2px,
+                rgba(60, 232, 179, 0.05) 3px,
+                rgba(60, 232, 179, 0.05) 4px
+            );
+            pointer-events: none;
+            opacity: 0.5;
+            animation: scanline 8s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100px; }
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 0.3; }
+            3% { opacity: 0.4; }
+            6% { opacity: 0.3; }
+            9% { opacity: 0.2; }
+            10% { opacity: 0.3; }
+            25% { opacity: 0.3; }
+            30% { opacity: 0.5; }
+            35% { opacity: 0.3; }
+            80% { opacity: 0.3; }
+            83% { opacity: 0.4; }
+            87% { opacity: 0.3; }
+            90% { opacity: 0.2; }
+            93% { opacity: 0.3; }
+            100% { opacity: 0.3; }
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            letter-spacing: 3px;
+            color: var(--digital-green);
+            font-weight: 600;
+            font-family: 'Inconsolata', monospace;
+            text-transform: uppercase;
+            position: relative;
+            line-height: 1.2;
+            text-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            width: 80px;
+            height: 1px;
+            background: var(--digital-green);
+            transform: translateX(-50%);
+            opacity: 0.8;
+            box-shadow: 0 0 4px var(--crt-glow-green);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            letter-spacing: 1px;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-family: 'Inconsolata', monospace;
+            color: var(--digital-green);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            margin: 20px 0 0 0;
+            color: var(--archive-cream);
+            font-family: 'Inconsolata', monospace;
+            letter-spacing: 1px;
+            font-weight: 400;
+            opacity: 0.85;
+            text-transform: uppercase;
+        }
+        
+        .station-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin: 25px auto 5px;
+            padding: 0 20px;
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+        }
+        
+        .station-info::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: var(--microfilm-gray);
+            opacity: 0.5;
+        }
+        
+        .station-name {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .station-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bureau-blue);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .main-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 31, 63, 0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 31, 63, 0.5) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .departures-board {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--terminal-black);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--digital-green);
+            overflow: hidden;
+            flex: 1;
+            margin: 0;
+            font-family: 'Inconsolata', monospace;
+            position: relative;
+        }
+        
+        .departures-board::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: linear-gradient(to bottom, 
+                rgba(60, 232, 179, 0.1) 0%, 
+                rgba(60, 232, 179, 0) 5%, 
+                rgba(60, 232, 179, 0) 95%, 
+                rgba(60, 232, 179, 0.1) 100%);
+            z-index: 10;
+        }
+        
+        .departures-board th {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(60, 232, 179, 0.4);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--digital-green);
+            background-color: var(--terminal-dark);
+            font-family: 'Inconsolata', monospace;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 5px var(--crt-glow-green);
+            position: relative;
+        }
+        
+        .departures-board td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(60, 232, 179, 0.15);
+            font-size: 0.8rem;
+            letter-spacing: 0.8px;
+            font-family: 'Inconsolata', monospace;
+            color: var(--archive-cream);
+            transition: all 0.3s ease;
+            position: relative;
+            white-space: nowrap; /* Prevent vertical text */
+            text-overflow: ellipsis;
+        }
+        
+        /* Fix for light mode text readability */
+        :root.light-theme .departures-board td {
+            color: var(--text-primary);
+        }
+        
+        :root.light-theme .train-link {
+            color: var(--text-primary);
+        }
+        
+        :root.light-theme .departures-board th {
+            color: var(--archive-cream);
+            background-color: var(--digital-green);
+        }
+        
+        :root.light-theme .terminal-display {
+            background-color: var(--terminal-dark);
+            border: 1px solid var(--digital-green);
+        }
+        
+        :root.light-theme h1 {
+            color: var(--digital-green);
+        }
+        
+        .departures-board tr:hover {
+            background-color: rgba(60, 232, 179, 0.1);
+        }
+        
+        .departures-board .train-type {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .departures-board .train-number {
+            width: 100px;
+            text-align: center;
+        }
+        
+        .departures-board .train-time {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .departures-board .train-destination {
+            font-weight: bold;
+        }
+        
+        .departures-board .train-status {
+            width: 150px;
+            text-align: center;
+        }
+        
+        .active {
+            animation: blink 1.5s infinite;
+            color: var(--digital-green);
+            position: relative;
+            text-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        .active::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            width: 6px;
+            height: 6px;
+            border-radius: 1px;
+            background-color: var(--digital-green);
+            box-shadow: 0 0 5px var(--crt-glow-green);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .train-link {
+            color: var(--archive-cream);
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            padding-left: 0;
+        }
+        
+        .train-link:hover {
+            color: var(--digital-green);
+            text-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        .train-link::before {
+            content: '>';
+            position: absolute;
+            left: -12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            color: var(--digital-green);
+        }
+        
+        .train-link:hover::before {
+            opacity: 1;
+        }
+        
+        .station-notice {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: var(--terminal-dark);
+            border: 1px solid var(--digital-green);
+            font-family: 'EB Garamond', serif;
+            font-size: 0.85rem;
+            color: var(--archive-cream);
+            text-align: center;
+            line-height: 1.8;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2), 0 0 5px var(--crt-glow-green);
+        }
+        
+        .station-notice::before {
+            content: 'MEMORANDUM 1895-27-LM';
+            position: absolute;
+            top: -8px;
+            left: 20px;
+            background-color: var(--terminal-dark);
+            padding: 0 10px;
+            font-size: 0.7rem;
+            color: var(--digital-green);
+            letter-spacing: 1.5px;
+            font-family: 'Inconsolata', monospace;
+            font-weight: 600;
+            text-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        .station-notice::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent,
+                transparent 2px,
+                rgba(60, 232, 179, 0.03) 3px,
+                rgba(60, 232, 179, 0.03) 4px
+            );
+            pointer-events: none;
+            opacity: 0.2;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.7rem;
+            background-color: var(--terminal-black);
+            color: var(--archive-cream);
+            border-top: 1px solid var(--digital-green);
+            font-family: 'Inconsolata', monospace;
+            letter-spacing: 0.8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        footer::before, footer::after {
+            content: '';
+            height: 1px;
+            width: 40px;
+            background: linear-gradient(to right, transparent, var(--digital-green), transparent);
+            display: inline-block;
+            opacity: 0.6;
+            box-shadow: 0 0 5px var(--crt-glow-green);
+        }
+        
+        footer a {
+            color: var(--digital-green);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 3px var(--crt-glow-green);
+        }
+        
+        footer a:hover {
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.6rem;
+                letter-spacing: 2px;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            .subtitle {
+                font-size: 0.75rem;
+                margin: 15px 0 0 0;
+            }
+            
+            .terminal-display {
+                padding: 10px;
+                max-width: 95%;
+            }
+            
+            .station-info {
+                flex-direction: column;
+                align-items: center;
+                margin-top: 10px;
+            }
+            
+            .station-name, .station-time {
+                margin: 5px 0;
+            }
+            
+            .departures-board {
+                font-size: 0.7rem;
+            }
+            
+            .departures-board th,
+            .departures-board td {
+                padding: 8px 10px;
+                font-size: 0.7rem;
+            }
+            
+            .departures-board th:nth-child(1),
+            .departures-board td:nth-child(1) {
+                width: 80px;
+            }
+            
+            .departures-board th:nth-child(3),
+            .departures-board td:nth-child(3) {
+                width: 60px;
+            }
+            
+            /* Responsive layout for small screens */
+            @media (max-width: 576px) {
+                .departures-board {
+                    display: block;
+                    overflow-x: auto;
+                    white-space: nowrap;
+                }
+                
+                .station-notice {
+                    font-size: 0.75rem;
+                    padding: 15px;
+                }
+                
+                footer {
+                    font-size: 0.65rem;
+                    flex-wrap: wrap;
+                    padding: 10px 5px;
+                }
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .departures-board th,
+            .departures-board td {
+                padding: 8px 5px;
+                font-size: 0.9rem;
+            }
+            
+            .train-time {
+                width: 60px;
+            }
+        }
+        
+        /* Flip animation for new entries */
+        @keyframes flip {
+            0% { transform: rotateX(90deg); opacity: 0; }
+            50% { transform: rotateX(8deg); opacity: 0.8; }
+            65% { transform: rotateX(-5deg); opacity: 0.9; }
+            80% { transform: rotateX(3deg); opacity: 1; }
+            100% { transform: rotateX(0deg); opacity: 1; }
+        }
+        
+        @keyframes flipTile {
+            0% { transform: rotateX(0deg); background-color: #000; }
+            15% { transform: rotateX(90deg); background-color: #222; }
+            30% { transform: rotateX(180deg); background-color: #000; }
+            45% { transform: rotateX(270deg); background-color: #222; }
+            60% { transform: rotateX(360deg); background-color: #000; }
+            100% { transform: rotateX(360deg); background-color: #000; }
+        }
+        
+        .flip-in {
+            animation: flip 0.65s ease-out forwards;
+            transform-origin: center center;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+        
+        .flip-tile {
+            animation: flipTile 1.2s ease-in-out;
+            transform-origin: center center;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            display: inline-block;
+        }
+        
+        .departures-board tr {
+            animation: flip 0.8s ease-out forwards;
+            transform-origin: center center;
+            transform-style: preserve-3d;
+        }
+        
+        .character-flip {
+            display: inline-block;
+            min-width: 0.6em;
+            text-align: center;
+            animation: flipChar 0.5s ease-out forwards;
+            transform-origin: center center;
+            transform-style: preserve-3d;
+            opacity: 0;
+        }
+        
+        @keyframes flipChar {
+            0% {
+                transform: rotateX(-90deg);
+                opacity: 0;
+            }
+            100% {
+                transform: rotateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .departures-board tr:nth-child(2) { animation-delay: 0.15s; }
+        .departures-board tr:nth-child(3) { animation-delay: 0.3s; }
+        .departures-board tr:nth-child(4) { animation-delay: 0.45s; }
+        .departures-board tr:nth-child(5) { animation-delay: 0.6s; }
+        .departures-board tr:nth-child(6) { animation-delay: 0.75s; }
+        .departures-board tr:nth-child(7) { animation-delay: 0.9s; }
+        .departures-board tr:nth-child(8) { animation-delay: 1.05s; }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="theme-switch" class="theme-switch-checkbox">
+        <label for="theme-switch" class="theme-switch-label">
+            <span class="theme-switch-inner"></span>
+            <span class="theme-switch-switch"></span>
+        </label>
+        <span class="theme-label">LIGHT/DARK</span>
+    </div>
+    <div id="css-backup" style="display:none;"></div>
+    <div class="container">
+        <header>
+            <div class="terminal-display">
+                <h1>SYNARCHIV</h1>
+                <div class="subtitle">MEMORY REMEDIATION SYSTEM • LUMIÈRE-LUHMANN PROTOCOL V.1895</div>
+            </div>
+            <div class="station-info">
+                <div class="station-name">REGISTRY: CENTRAL MEMORY ARCHIVE</div>
+                <div class="station-time">SYSTEM.TIME: <span id="current-time">--:--</span></div>
+            </div>
+        </header>
+        
+        <section class="main-content">
+            <table class="departures-board">
+                <thead>
+                    <tr>
+                        <th>MEMTYPE</th>
+                        <th>ID</th>
+                        <th>DEPARTURE</th>
+                        <th>MEMORY NODE</th>
+                        <th>REMEDIATION STATUS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="train-type">CINE-MEM</td>
+                        <td>SYN-7429</td>
+                        <td>08:15</td>
+                        <td><a href="train-brain19.html" class="train-link">LUMIÈRE APPARATUS STATION</a></td>
+                        <td class="status">ON TIME</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">BURE-MEM</td>
+                        <td>SYN-3801</td>
+                        <td>09:30</td>
+                        <td><a href="iso-mem-04.html" class="train-link">LUHMANN INDEX REPOSITORY</a></td>
+                        <td class="status">ON TIME</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">CINE-MEM</td>
+                        <td>SYN-9142</td>
+                        <td>10:45</td>
+                        <td><a href="train-physics.html" class="train-link">KINEMATIC PHYSICS ENGINE</a></td>
+                        <td class="status">ON TIME</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">CINE-MEM</td>
+                        <td>SYN-6274</td>
+                        <td>12:00</td>
+                        <td><a href="true-train.html" class="train-link">TEMPORAL REGISTRY HUB</a></td>
+                        <td class="status">ON TIME</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">BURE-MEM</td>
+                        <td>SYN-5138</td>
+                        <td>13:15</td>
+                        <td><a href="sleek-drawer.html" class="train-link">ADMINISTRATIVE INTERFACE</a></td>
+                        <td class="status">ON TIME</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">CINE-MEM</td>
+                        <td>SYN-2967</td>
+                        <td>14:30</td>
+                        <td><a href="iso-mem-03.html" class="train-link">MEMORY RECALL SECTOR</a></td>
+                        <td class="status active">BOARDING</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">BURE-MEM</td>
+                        <td>SYN-8053</td>
+                        <td>15:45</td>
+                        <td><a href="iso-mem-05.html" class="train-link">ISOMORPHIC MEMORY VAULT</a></td>
+                        <td class="status active">BOARDING</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">CINE-MEM</td>
+                        <td>SYN-4796</td>
+                        <td>17:00</td>
+                        <td><a href="about.html" class="train-link">SYNARCHIV MANIFEST NODE</a></td>
+                        <td class="status">SCHEDULED</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">BURE-MEM</td>
+                        <td>SYN-1625</td>
+                        <td>18:15</td>
+                        <td><a href="star.html" class="train-link">STELLAR MEMORY NEXUS</a></td>
+                        <td class="status">ON TIME</td>
+                    </tr>
+                    <tr>
+                        <td class="train-type">CINE-MEM</td>
+                        <td>SYN-3489</td>
+                        <td>19:30</td>
+                        <td><a href="#" class="train-link">EPISODIC REMEDIATION BUREAU</a></td>
+                        <td class="status">SCHEDULED</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <div class="station-notice">
+            The records are periodically synchronized. All entries are processed overnight. Activation is scheduled according to registry pertinence. SYNARCHIV maintains jurisdiction over the classification, preservation, and deployment of all collective memory artifacts. Non-compliance will result in immediate remedial archiving. Memory retention policies are applied to all cultural data pursuant to the Lumière-Luhmann Accord of 1895.
+        </div>
+        
+        <footer>
+            SYNARCHIV INSTITUTE &copy; 2087-2093 | MEMORY REMEDIATION DIVISION | <a href="#">For Administrative Access: Apply at Desk L-392</a>
+        </footer>
+    </div>
+    
+    <script>
+        // Simple script to randomize the "active" blinking status for some elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update the clock periodically with split-flap animation
+            function updateClock() {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const timeStr = `${hours}:${minutes}`;
+                
+                // Update station clock with split-flap animation
+                const clockElement = document.getElementById('current-time');
+                const currentTime = clockElement.textContent;
+                
+                if (currentTime !== timeStr) {
+                    clockElement.innerHTML = '';
+                    
+                    // Create flipping characters
+                    for (let i = 0; i < timeStr.length; i++) {
+                        const charSpan = document.createElement('span');
+                        charSpan.className = 'character-flip';
+                        charSpan.textContent = timeStr[i];
+                        charSpan.style.animationDelay = `${i * 0.1}s`;
+                        clockElement.appendChild(charSpan);
+                    }
+                }
+                
+                // Update train departure times with split-flap effect
+                document.querySelectorAll('.train-time').forEach(timeCell => {
+                    if (Math.random() < 0.05 && !timeCell.classList.contains('fixed-time')) {
+                        const newTime = generateRandomTime();
+                        timeCell.innerHTML = '';
+                        
+                        // Create flipping characters for time
+                        for (let i = 0; i < newTime.length; i++) {
+                            const charSpan = document.createElement('span');
+                            charSpan.className = 'character-flip';
+                            charSpan.textContent = newTime[i];
+                            charSpan.style.animationDelay = `${i * 0.05}s`;
+                            timeCell.appendChild(charSpan);
+                        }
+                    }
+                });
+                
+                // Helper function to generate random departure time
+                function generateRandomTime() {
+                    const h = Math.floor(Math.random() * 24).toString().padStart(2, '0');
+                    const m = (Math.floor(Math.random() * 4) * 15).toString().padStart(2, '0');
+                    return `${h}:${m}`;
+                }
+                
+                // Ensure CSS stability
+                let cssStabilityInterval;
+                const ensureCssStability = function() {
+                    if (cssStabilityInterval) clearInterval(cssStabilityInterval);
+                    
+                    // Check every 5 seconds to make sure styles haven't been altered
+                    cssStabilityInterval = setInterval(() => {
+                        // Re-apply theme to ensure consistency
+                        const currentTheme = localStorage.getItem('theme') || 'dark';
+                        document.documentElement.className = currentTheme + '-theme';
+                    }, 5000);
+                };
+                ensureCssStability();
+                
+                // Only log branding once
+                if (!window.brandingLogged) {
+                    console.log('%c SYNARCHIV INSTITUTE ', 'background: #1C1C1C; color: #3CE8B3; font-size: 16px; padding: 5px;');
+                    console.log('%c MEMORY REMEDIATION SYSTEM • LUMIÈRE-LUHMANN PROTOCOL V.1895', 'color: #3CE8B3; font-style: italic; opacity: 0.7;');
+                    window.brandingLogged = true;
+                }
+                
+                // Randomly change some train statuses with split-flap animation
+                const statuses = document.querySelectorAll('.status');
+                statuses.forEach(status => {
+                    if (Math.random() < 0.02 && !status.classList.contains('active')) { // 2% chance to change
+                        // Save the parent row for animation
+                        const parentRow = status.closest('tr');
+                        
+                        // Apply flip animation to row
+                        parentRow.classList.remove('flip-tile');
+                        void parentRow.offsetWidth; // Force reflow
+                        parentRow.classList.add('flip-tile');
+                        
+                        // SYNARCHIV-specific terminology for status changes
+                        const newStatuses = [
+                            'SCHEDULED', 
+                            'PENDING APPROVAL', 
+                            'CATALOGUED', 
+                            'INDEXING', 
+                            'REMEDIATION IN PROGRESS', 
+                            'ARCHIVED',
+                            'RETENTION REVIEW',
+                            'BINARY DISTINCTION'
+                        ];
+                        const newStatus = newStatuses[Math.floor(Math.random() * newStatuses.length)];
+                        
+                        // Clear the status cell and create character-by-character animation
+                        status.innerHTML = '';
+                        
+                        // Create split-flap animation for each character
+                        for (let i = 0; i < newStatus.length; i++) {
+                            const span = document.createElement('span');
+                            span.className = 'character-flip';
+                            span.textContent = newStatus[i];
+                            span.style.animationDelay = `${i * 0.05}s`;
+                            status.appendChild(span);
+                        }
+                        
+                        // Update active status
+                        if (newStatus === 'REMEDIATION IN PROGRESS' || newStatus === 'INDEXING') {
+                            status.classList.add('active');
+                        } else {
+                            status.classList.remove('active');
+                        }
+                    }
+                });
+                
+                // Apply split-flap animation to all train destinations occasionally
+                if (Math.random() < 0.01) { // 1% chance on each clock update
+                    document.querySelectorAll('.train-link').forEach(link => {
+                        const originalText = link.textContent;
+                        link.innerHTML = '';
+                        
+                        for (let i = 0; i < originalText.length; i++) {
+                            const span = document.createElement('span');
+                            span.className = 'character-flip';
+                            span.textContent = originalText[i];
+                            span.style.animationDelay = `${i * 0.02}s`;
+                            link.appendChild(span);
+                        }
+                    });
+                }
+                
+                // Schedule the next update
+                setTimeout(updateClock, 3000);
+            }
+            
+            // Start the updates
+            updateClock();
+            
+            // Add CRT scanline effect
+            const scanline = document.createElement('div');
+            scanline.style.position = 'fixed';
+            scanline.style.top = '0';
+            scanline.style.left = '0';
+            scanline.style.width = '100%';
+            scanline.style.height = '2px';
+            scanline.style.backgroundColor = 'rgba(60, 232, 179, 0.1)';
+            scanline.style.boxShadow = '0 0 2px rgba(60, 232, 179, 0.2)';
+            scanline.style.zIndex = '9999';
+            scanline.style.pointerEvents = 'none';
+            document.body.appendChild(scanline);
+            
+            // Create occasional CRT flicker effect
+            const flickerOverlay = document.createElement('div');
+            flickerOverlay.style.position = 'fixed';
+            flickerOverlay.style.top = '0';
+            flickerOverlay.style.left = '0';
+            flickerOverlay.style.width = '100%';
+            flickerOverlay.style.height = '100%';
+            flickerOverlay.style.backgroundColor = 'rgba(60, 232, 179, 0.03)';
+            flickerOverlay.style.opacity = '0';
+            flickerOverlay.style.zIndex = '9998';
+            flickerOverlay.style.pointerEvents = 'none';
+            document.body.appendChild(flickerOverlay);
+            
+            // Scanline animation
+            let scanPos = 0;
+            function animateScanline() {
+                scanPos = (scanPos + 1) % window.innerHeight;
+                scanline.style.top = scanPos + 'px';
+                
+                // Occasional CRT flicker effect
+                if (Math.random() < 0.002) { // Very rare flicker
+                    flickerOverlay.style.opacity = '1';
+                    setTimeout(() => {
+                        flickerOverlay.style.opacity = '0';
+                    }, 100);
+                }
+                
+                requestAnimationFrame(animateScanline);
+            }
+            animateScanline();
+            
+            // Initialize all status cells with character-by-character animation on page load
+            document.querySelectorAll('.status').forEach(status => {
+                const text = status.textContent;
+                status.innerHTML = '';
+                
+                for (let i = 0; i < text.length; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'character-flip';
+                    span.textContent = text[i];
+                    span.style.animationDelay = `${i * 0.05}s`;
+                    status.appendChild(span);
+                }
+            });
+            
+            // Store original CSS
+            const originalStyles = document.head.querySelectorAll('style');
+            originalStyles.forEach(style => {
+                document.getElementById('css-backup').appendChild(style.cloneNode(true));
+            });
+            
+            // Function to reset CSS if it breaks
+            function resetCSS() {
+                const styleElements = document.head.querySelectorAll('style');
+                styleElements.forEach(el => el.remove());
+                
+                const backupStyles = document.getElementById('css-backup').querySelectorAll('style');
+                backupStyles.forEach(style => {
+                    document.head.appendChild(style.cloneNode(true));
+                });
+                
+                // Re-apply theme
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                document.documentElement.className = savedTheme + '-theme';
+                document.getElementById('theme-switch').checked = savedTheme === 'light';
+            }
+            
+            // Theme toggle functionality
+            const themeSwitch = document.getElementById('theme-switch');
+            
+            // Check for saved theme preference or default to dark theme
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.className = currentTheme + '-theme';
+            document.getElementById('theme-switch').checked = currentTheme === 'light';
+            
+            // Theme toggle functionality with protection against CSS breakage
+            document.getElementById('theme-switch').addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    document.documentElement.className = 'light-theme';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.className = 'dark-theme';
+                    localStorage.setItem('theme', 'dark');
+                }
+                
+                // Reset CSS if something went wrong during theme switch
+                setTimeout(resetCSS, 100);
+            });
+            
+            // Periodically check if CSS needs to be reset
+            setInterval(function() {
+                if (!document.documentElement.className.includes('theme')) {
+                    console.log('CSS appears to be broken, resetting...');
+                    resetCSS();
+                }
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

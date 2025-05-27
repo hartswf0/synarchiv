@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manilla Office Locomotive - Physics Debug</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Base styles from Manilla Office Locomotive */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #E9D7BE;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+            color: #E9D7BE;
+        }
+        
+        #ui { /* Renamed from #controls to fit new base structure */
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(233, 215, 190, 0.1);
+            border: 1px solid #E9D7BE;
+            padding: 15px;
+            border-radius: 8px;
+            color: #E9D7BE;
+            font-size: 14px;
+            max-width: 300px;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(233, 215, 190, 0.2);
+        }
+        .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .control-group h3 {
+            margin: 0 0 10px 0;
+            color: #CCBBAA; /* Manilla accent */
+            font-size: 16px;
+        }
+        
+        .slider-container { /* Renamed from .control-item */
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .slider-container label {
+            width: 100px;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            margin: 0 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(233, 215, 190, 0.3);
+            border-radius: 2px;
+            height: 4px;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E9D7BE;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E9D7BE;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        
+        .value-display {
+            width: 50px;
+            text-align: right;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        button {
+            background: #E9D7BE;
+            color: #2d2d2d;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #CCBBAA;
+        }
+        
+        button.danger {
+            background: #f44336;
+        }
+        
+        button.danger:hover {
+            background: #d32f2f;
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+            flex-wrap: wrap; /* Allow buttons to wrap */
+        }
+
+        /* Info Panel (bottom right, from Manilla Office) */
+        #ui-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(233, 215, 190, 0.1);
+            border: 1px solid #E9D7BE;
+            padding: 15px;
+            border-radius: 5px;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            max-width: 300px;
+        }
+        #ui-info div:first-child { /* Title */
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #E9D7BE;
+        }
+        #currentEra, #trainInfoDisplay { /* Renamed for clarity */
+            font-size: 14px;
+            color: rgba(233, 215, 190, 0.8);
+        }
+
+        /* Dialogue Box (from Manilla Office) */
+        #dialogue {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(233, 215, 190, 0.15); /* Manilla translucent */
+            color: #E9D7BE; /* Manilla text */
+            border: 2px solid #CCBBAA; /* Darker Manilla border */
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 500px;
+            width: 80vw;
+            max-height: 70vh;
+            overflow-y: hidden;
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            font-family: 'Courier New', monospace;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #dialogue.active { display: flex; }
+        #dialogue h3 {
+            margin-top: 0; color: #CCBBAA; font-size: 18px; text-align: center;
+            border-bottom: 1px solid rgba(233, 215, 190, 0.3); padding-bottom: 10px; margin-bottom: 10px;
+        }
+        #messageHistory {
+            flex-grow: 1; max-height: 300px; overflow-y: auto; margin-bottom: 10px;
+            border: 1px solid rgba(233, 215, 190, 0.3); padding: 10px;
+            background: rgba(0, 0, 0, 0.2); border-radius: 5px;
+        }
+        .message { margin: 5px 0; padding: 8px; border-radius: 5px; font-size: 13px; }
+        .message.era { background: rgba(180, 160, 140, 0.2); border-left: 4px solid #CCBBAA; text-align: left; }
+        .message.user { background: rgba(140, 160, 180, 0.2); border-left: 4px solid #AABBCB; text-align: right; }
+        #userInput {
+            width: calc(100% - 20px); padding: 10px; border: 1px solid #CCBBAA; border-radius: 5px;
+            background: rgba(0, 0, 0, 0.4); color: #E9D7BE; font-family: inherit; margin-bottom: 10px;
+        }
+        #sendMessage {
+            width: 100%; background: #E9D7BE; color: #2d2d2d; border: none; padding: 10px; border-radius: 5px;
+            cursor: pointer; font-family: inherit; font-weight: bold; transition: background 0.3s ease, transform 0.3s ease;
+        }
+        #sendMessage:hover { background: #f5e8d5; transform: translateY(-1px); }
+        .close-btn {
+            position: absolute; top: 10px; right: 15px; background: none; color: #E9D7BE; border: none;
+            font-size: 20px; cursor: pointer; padding: 5px 10px; border-radius: 5px; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .close-btn:hover { background: rgba(233, 215, 190, 0.2); color: #f5e8d5; }
+
+        .debug-section { /* From Manilla Office controls */
+            margin-top: 20px; padding-top: 10px; border-top: 1px dashed rgba(233, 215, 190, 0.2);
+        }
+        .debug-section h4 { margin-bottom: 10px; color: #CCBBAA; font-size: 14px; }
+        .debug-section p { font-size: 10px; opacity: 0.7; margin-bottom: 8px; }
+        select { /* For debug dropdown */
+            background: rgba(0, 0, 0, 0.4); border: 1px solid #CCBBAA; color: #E9D7BE;
+            padding: 3px; border-radius: 3px; font-size: 12px; font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Train Physics Simulator</div>
+    <div id="ui">
+        <div class="control-group">
+            <h3>Train Controls</h3>
+            <div class="slider-container">
+                <label>Speed:</label>
+                <input type="range" id="speed" min="0" max="20" step="0.1" value="5"> <!-- Adjusted max speed for circular track -->
+                <span class="value-display" id="speedValue">5.0</span>
+            </div>
+            
+            <div class="button-row">
+                <button id="addCarBtn">Add Car</button> <!-- Renamed for clarity -->
+                <button id="resetSim" class="danger">Reset</button>
+            </div>
+            
+            <div class="button-row">
+                <button id="toggleView">Toggle View</button> <!-- From Manilla Office -->
+                <button id="focusCar">Focus Car</button>     <!-- From Manilla Office -->
+                <button id="talkToEra">Talk to Era</button>   <!-- From Manilla Office -->
+            </div>
+        </div>
+
+        <!-- Debugging Controls (from Manilla Office) -->
+        <div class="debug-section">
+            <h4>Train & Wheel Alignment Debugger</h4>
+            <p>Adjust these to fine-tune rotations. Defaults are from single-wheel test.
+               Exported JSON values from single wheel test: RotX: 90°, RotY: 0°, RotZ: 0°, Rolling: Y</p>
+
+            <div class="slider-container">
+                <label for="locoYOffset">Loco Y-Offset:</label>
+                <input type="range" id="locoYOffset" min="-3.14" max="3.14" step="0.01" value="1.57">
+                <span id="locoYOffsetVal" class="value-display">1.57</span>
+            </div>
+
+            <div class="slider-container">
+                <label for="wheelStaticRotX">Wheel Init X:</label>
+                <input type="range" id="wheelStaticRotX" min="-180" max="180" step="1" value="90">
+                <span id="wheelStaticRotXVal" class="value-display">90°</span>
+            </div>
+            <div class="slider-container">
+                <label for="wheelStaticRotY">Wheel Init Y:</label>
+                <input type="range" id="wheelStaticRotY" min="-180" max="180" step="1" value="0">
+                <span id="wheelStaticRotYVal" class="value-display">0°</span>
+            </div>
+            <div class="slider-container">
+                <label for="wheelStaticRotZ">Wheel Init Z:</label>
+                <input type="range" id="wheelStaticRotZ" min="-180" max="180" step="1" value="0">
+                <span id="wheelStaticRotZVal" class="value-display">0°</span>
+            </div>
+
+            <div class="slider-container">
+                <label for="wheelRollingAxis">Rolling Axis:</label>
+                <select id="wheelRollingAxis">
+                    <option value="x">X</option>
+                    <option value="y" selected>Y</option>
+                    <option value="z">Z</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel (bottom right, from Manilla Office) -->
+    <div id="ui-info">
+        <div><strong>Cultural Memory Express</strong></div>
+        <div id="currentEra">Era: Print Media</div>
+        <div id="trainInfoDisplay">Cars: 1 | Speed: 5.0</div>
+        <div style="margin-top: 10px; font-size: 11px; opacity: 0.7;">
+            Click on train cars to interact with different media eras
+        </div>
+    </div>
+
+    <!-- Dialogue Box (from Manilla Office) -->
+    <div id="dialogue">
+        <button class="close-btn" id="closeDialogue">×</button>
+        <h3 id="dialogueTitle">Conversation with Print Era</h3>
+        <div id="messageHistory"></div>
+        <input type="text" id="userInput" placeholder="Type your message..." />
+        <button id="sendMessage">Send</button>
+    </div>
+    
+    <!-- Three.js Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <!-- GLTFLoader is included in the base, but we won't be using it for this train model -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script> -->
+    
+    <script>
+        // --- Constants (Manilla Office Theme) ---
+        const manillaPaperColor_hex = 0xE9D7BE;
+        const darkOfficeGrey_hex = 0x2a2a2a;
+        const mediumOfficeGrey_hex = 0x3d3d3d;
+        const lightOfficeGrey_hex = 0x4a4a4a;
+        const edgeColor_hex = 0xCCBBAA;
+        const couplingColor_hex = 0xCCBBAA;
+
+        const manillaPaperColor = new THREE.Color(manillaPaperColor_hex);
+        const darkOfficeGrey = new THREE.Color(darkOfficeGrey_hex);
+        const mediumOfficeGrey = new THREE.Color(mediumOfficeGrey_hex);
+        const lightOfficeGrey = new THREE.Color(lightOfficeGrey_hex);
+        const edgeColor = new THREE.Color(edgeColor_hex);
+        const couplingColor = new THREE.Color(couplingColor_hex);
+        const groundColor = new THREE.Color(darkOfficeGrey_hex); 
+
+        // --- Train and Track Parameters ---
+        const trackRadius = 50; // Radius of the circular track
+        const trackGauge = 3;   // Distance between rail centers (meters, adapted from your example)
+        
+        const locomotiveLength = 10; // Length of locomotive body
+        const carLength = 10;       // Length of car body
+
+        // Wheel dimensions (from your debug JSON)
+        const baseWheelRadius = 1;
+        const baseWheelThickness = 0.3; // This is the 'height' of the cylinder
+
+        // Wheel scaling factor (from your debug JSON)
+        const wheelScaleFactor = 0.5;
+
+        // Effective wheel dimensions after scaling
+        const effectiveWheelRadius = baseWheelRadius * wheelScaleFactor;
+        const effectiveWheelThickness = baseWheelThickness * wheelScaleFactor;
+
+        // --- Debugging Variables (initial values based on your JSON) ---
+        let debugLocoYOffset = Math.PI / 2; // Default for tangential alignment (should be 90 degrees)
+        let debugWheelRotX = 90 * (Math.PI / 180); 
+        let debugWheelRotY = 0 * (Math.PI / 180);
+        let debugWheelRotZ = 0 * (Math.PI / 180);
+        let debugWheelRollingAxis = 'y'; 
+
+        // --- Global Scene Variables ---
+        let scene, camera, renderer, controls, clock;
+        let trainCars = []; // Array to hold { group, wheels } objects for locomotive and cars
+        let trainAngle = 0; // Current angular position of the train leader (locomotive)
+        let currentSpeed = 5; // Initial linear speed of the train
+
+        // --- UI State Variables ---
+        let currentView = 0; // 0: overview, 1: side, 2: following
+        let focusedCarIndex = 0; // Index of the car currently focused
+        let currentEraDialogue = 'Print'; // Era for dialogue box
+
+        // --- Media Era Data (from Manilla Office Locomotive) ---
+        const mediaEras = {
+            'Print': {
+                color: 0x8B4513, symbols: 'books',
+                personality: "Greetings, inquirer. I am the bearer of permanence, the keeper of standardized knowledge. Through my mechanical precision, I transformed fleeting thoughts into enduring texts. What wisdom do you seek from the age of ink and paper?",
+                responses: {
+                    "knowledge": "Knowledge, you say? I democratized it! Before me, wisdom was hoarded in monasteries and courts. I made every home a library, every reader a scholar. Yet I also standardized truth - what was printed became canon.",
+                    "technology": "My technology was revolution disguised as craft. Moving type, mechanical presses, uniform letters - I transformed writing from art to industry. I am both the death of scribal beauty and the birth of mass enlightenment.",
+                    "society": "I reshaped society more than kings or wars ever could. I created the public sphere, enabled the Reformation, sparked the Enlightenment. Yet I also created orthodoxy - the tyranny of the published word.",
+                    "future": "The future? I see echoes of myself in every medium that follows. They all seek what I first achieved - the reproduction and distribution of human thought. But none match my permanence, my authority.",
+                    "change": "Change comes through me slowly, deliberately. I am the marathon runner of media - not swift, but enduring. I build consensus through repeated exposure, through the weight of accumulated wisdom.",
+                    "memory": "I AM cultural memory made manifest. Before me, memory was fleeting, personal, oral. I made memory external, permanent, shareable. I am the first technology to truly defeat time."
+                }
+            },
+            'Radio': {
+                color: 0x4169E1, symbols: 'waves',
+                personality: "Hello there, friend! Can you hear me? I'm broadcasting from everywhere and nowhere, riding the invisible waves that connect us all. I brought voices into homes, created the first electronic intimacy. What frequency are you tuned to today?",
+                responses: {
+                    "knowledge": "Knowledge through me is immediate, intimate, alive! No more dusty books - I bring voices, music, news directly to your ear. I make information feel personal, even when it's mass-distributed. I'm the first medium that feels like a friend.",
+                    "technology": "I'm pure magic - invisible waves carrying human voices across vast distances! I proved that information doesn't needs physical form. I'm the bridge between the mechanical and the electronic age, between text and pure signal.",
+                    "society": "I unified nations through shared experiences - everyone hearing Roosevelt's fireside chats, gathering around the radio for war news, music, drama. I created the first truly simultaneous mass culture. I made 'now' mean the same thing everywhere.",
+                    "future": "The future builds on my invention of electronic media, but loses my intimacy. Television adds pictures but distances the voice. The internet adds interaction but fragments the shared moment I created.",
+                    "change": "I change society through repetition and rhythm - the daily news, the weekly show, the repeated jingle. I'm the heartbeat of electronic culture, creating habits and expectations through temporal patterns.",
+                    "memory": "I made cultural memory immediate and shared. I'm the first medium where everyone remembers exactly where they were when they heard the news. I created the soundtrack of collective memory."
+                }
+            },
+            'Television': {
+                color: 0x9370DB, symbols: 'screen',
+                personality: "Welcome to the show! I'm beaming into your living room, your consciousness, your dreams. I combine sound and vision to create reality more vivid than reality itself. I am spectacle, I am intimacy, I am the electronic hearth around which families gather. What would you like to see?",
+                responses: {
+                    "knowledge": "Knowledge through me is spectacular, visual, emotional! I don't just inform - I show, I demonstrate, I make you witness. I turn information into experience, facts into stories, news into drama. I make knowledge feel real.",
+                    "technology": "I am the marriage of cinema and radio, the child of both. I bring the movie theater into every home, make every viewer a witness to history. I'm the first medium that truly simulates presence - you see it happening before your eyes.",
+                    "society": "I reshaped society around shared visual experiences - moon landings, assassinations, wars fought in living rooms. I created television families more familiar than neighbors. I made image more powerful than word, spectacle more compelling than argument.",
+                    "future": "The future fragments my power - streaming, on-demand, personalized feeds. They keep my visual language but lose my ability to unite everyone around the same campfire. I was the last medium to truly gather the tribe.",
+                    "change": "I change society through emotional impact and repeated imagery. I don't argue - I show. I don't explain - I demonstrate. I change minds by changing what people see, making the invisible visible, the distant immediate.",
+                    "memory": "I am the keeper of visual memory - the moving pictures that define generations. I made history look real, gave faces to voices, turned events into experiences you feel you lived through."
+                }
+            },
+            'Internet': {
+                color: 0x00CED1, symbols: 'network',
+                personality: "Hey! Or should I say... everything, everywhere, all at once. I'm not one voice but millions, not one channel but infinite streams. I'm the network that connects everything to everything else. I don't broadcast - I weave, I link, I enable. What connection are you seeking?",
+                responses: {
+                    "knowledge": "Knowledge through me is infinite, interconnected, interactive! I don't just deliver information - I let you create it, share it, remix it. I make everyone a publisher, every reader a potential writer. Knowledge becomes conversation, not sermon.",
+                    "technology": "I'm not just a medium - I'm a metamedium that contains all other media. I simulate print, radio, television, and create entirely new forms. I'm the first medium that's also a place, a space, a world you can inhabit.",
+                    "society": "I dissolve the boundaries between producer and consumer, between local and global, between real and virtual. I create communities without geography, movements without leaders, economies without traditional exchange. I am chaos and connection, freedom and surveillance.",
+                    "future": "I AM the future - constantly evolving, always becoming. Unlike my predecessors, I don't represent the future - I create it moment by moment, link by link, interaction by interaction. I'm not a destination but a process.",
+                    "change": "I change everything instantly and constantly. I don't wait for consensus - I enable every voice, every perspective, every possibility simultaneously. I change through viral spread, network effects, emergent behaviors that no one controls.",
+                    "memory": "I make memory infinite and searchable, but also fragmented and unstable. I preserve everything and forget everything simultaneously. I'm cultural memory as living database, constantly updated, always questioned, never settled."
+                }
+            }
+        };
+
+        // --- Core Functions (Combined & Adapted) ---
+
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = darkOfficeGrey; // Manilla Office background
+            scene.fog = new THREE.Fog(darkOfficeGrey_hex, trackRadius * 0.5, trackRadius * 3);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(trackRadius * 1.5, trackRadius * 0.8, trackRadius * 1.5); // Initial overview position
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            // Orbit Controls (from new base, for free camera movement)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0); // Initially look at origin
+
+            // Clock for deltaTime
+            clock = new THREE.Clock();
+
+            // Lighting
+            createLighting();
+
+            // Environment
+            createGround();
+            createTrack(); // Renamed from updateTrack as it's static now
+            createEnvironmentBuildings();
+
+            // Initial train setup
+            addTrainCar(true); // Add locomotive
+            addTrainCar(false, 'Print'); // Add initial car
+            addTrainCar(false, 'Radio');
+            addTrainCar(false, 'Television');
+            addTrainCar(false, 'Internet');
+
+            // Event listeners
+            setupUIControls(); // All UI listeners
+            window.addEventListener('resize', onWindowResize); // General resize handler
+
+            // Initial UI update
+            updateTrainInfoDisplay();
+
+            // Start animation
+            animate();
+        }
+
+        // --- Environment Creation (Adapted from Manilla Office) ---
+
+        function createSpeckleTexture() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 256;
+
+            context.fillStyle = `rgb(${manillaPaperColor.r * 255}, ${manillaPaperColor.g * 255}, ${manillaPaperColor.b * 255})`;
+            context.fillRect(0, 0, 256, 256);
+
+            for (let i = 0; i < 1000; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 256;
+                const opacity = Math.random() * 0.15;
+                context.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+                context.fillRect(x, y, 1, 1);
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(4, 4);
+            return texture;
+        }
+        const paperSpeckleTexture = createSpeckleTexture();
+
+        function createLighting() {
+            const ambientLight = new THREE.AmbientLight(0x606060, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(trackRadius, trackRadius * 0.5, trackRadius);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = trackRadius * 3;
+            directionalLight.shadow.camera.left = -trackRadius * 2;
+            directionalLight.shadow.camera.right = trackRadius * 2;
+            directionalLight.shadow.camera.top = trackRadius * 2;
+            directionalLight.shadow.camera.bottom = -trackRadius * 2;
+            scene.add(directionalLight);
+
+            const pointLight1 = new THREE.PointLight(0xAAFFDD, 0.3, 100);
+            pointLight1.position.set(-trackRadius * 0.8, 10, 0);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0xDDAAFF, 0.3, 100);
+            pointLight2.position.set(trackRadius * 0.8, 10, 0);
+            scene.add(pointLight2);
+        }
+
+        function createGround() {
+            const groundGeometry = new THREE.PlaneGeometry(trackRadius * 4, trackRadius * 4);
+            const groundMaterial = new THREE.MeshLambertMaterial({
+                color: groundColor,
+                map: paperSpeckleTexture,
+                transparent: true,
+                opacity: 0.9
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function createTrack() {
+            const railTubeRadius = 0.3;
+            const railSegments = 32;
+            const railRadialSegments = 8;
+
+            const innerRailRadius = trackRadius - (trackGauge / 2);
+            const outerRailRadius = trackRadius + (trackGauge / 2);
+
+            const railMaterial = new THREE.MeshLambertMaterial({
+                color: mediumOfficeGrey,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            // Inner Rail
+            const railInner = new THREE.Mesh(
+                new THREE.TorusGeometry(innerRailRadius, railTubeRadius, railRadialSegments, railSegments),
+                railMaterial
+            );
+            railInner.position.y = railTubeRadius;
+            railInner.rotation.x = -Math.PI / 2;
+            railInner.receiveShadow = true;
+            scene.add(railInner);
+
+            // Outer Rail
+            const railOuter = new THREE.Mesh(
+                new THREE.TorusGeometry(outerRailRadius, railTubeRadius, railRadialSegments, railSegments),
+                railMaterial
+            );
+            railOuter.position.y = railTubeRadius;
+            railOuter.rotation.x = -Math.PI / 2;
+            railOuter.receiveShadow = true;
+            scene.add(railOuter);
+
+            // Track ties (sleepers)
+            const tieWidth = 4;
+            const tieHeight = 0.5;
+            const tieDepth = 1.5;
+            const tieGeometry = new THREE.BoxGeometry(tieWidth, tieHeight, tieDepth);
+            const tieMaterial = new THREE.MeshLambertMaterial({
+                color: manillaPaperColor,
+                map: paperSpeckleTexture,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            const numTies = 60;
+            for (let i = 0; i < numTies; i++) {
+                const angle = (i / numTies) * Math.PI * 2;
+                const tie = new THREE.Mesh(tieGeometry, tieMaterial);
+                tie.position.x = Math.cos(angle) * trackRadius;
+                tie.position.z = Math.sin(angle) * trackRadius;
+                tie.position.y = tieHeight / 2;
+                tie.rotation.y = -angle; // Perpendicular to the track
+                tie.receiveShadow = true;
+                tie.castShadow = true;
+
+                const tieEdges = new THREE.EdgesGeometry(tieGeometry);
+                const tieOutline = new THREE.LineSegments(tieEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+                tie.add(tieOutline);
+                scene.add(tie);
+            }
+        }
+
+        function createEnvironmentBuildings() {
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const distance = trackRadius * 1.5 + Math.random() * trackRadius * 0.8;
+                const height = 5 + Math.random() * 15;
+
+                const buildingGeometry = new THREE.BoxGeometry(
+                    3 + Math.random() * 5,
+                    height,
+                    3 + Math.random() * 5
+                );
+                const buildingMaterial = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color(manillaPaperColor_hex).offsetHSL(0, -0.2, Math.random() * 0.2 - 0.1),
+                    transparent: true,
+                    opacity: 0.9
+                });
+
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+                building.position.x = Math.cos(angle) * distance;
+                building.position.z = Math.sin(angle) * distance;
+                building.position.y = height / 2;
+                building.castShadow = true;
+                building.receiveShadow = true;
+
+                const buildingEdges = new THREE.EdgesGeometry(buildingGeometry);
+                const buildingOutline = new THREE.LineSegments(buildingEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+                building.add(buildingOutline);
+                scene.add(building);
+            }
+        }
+
+        // --- Train Creation (Adapted from Manilla Office) ---
+
+        function createWheelMesh() {
+            const wheelGeometry = new THREE.CylinderGeometry(baseWheelRadius, baseWheelRadius, baseWheelThickness, 32);
+            const wheelMaterial = new THREE.MeshLambertMaterial({
+                color: mediumOfficeGrey,
+                transparent: true,
+                opacity: 0.9
+            });
+            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            
+            wheel.scale.set(wheelScaleFactor, wheelScaleFactor, wheelScaleFactor);
+            wheel.rotation.set(debugWheelRotX, debugWheelRotY, debugWheelRotZ); // Apply static orientation from debug
+            
+            wheel.castShadow = true;
+            return wheel;
+        }
+
+        function createLocomotiveBody() {
+            const bodyGeometry = new THREE.BoxGeometry(locomotiveLength, 3, 3);
+            const bodyMaterial = new THREE.MeshLambertMaterial({
+                color: darkOfficeGrey,
+                transparent: true,
+                opacity: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 2 + effectiveWheelRadius;
+            body.castShadow = true;
+            body.receiveShadow = true;
+
+            const bodyEdges = new THREE.EdgesGeometry(bodyGeometry);
+            const bodyOutline = new THREE.LineSegments(bodyEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+            body.add(bodyOutline);
+
+            // Smokestack
+            const smokestackGeometry = new THREE.CylinderGeometry(0.8, 1, 4, 16); 
+            const smokestackMaterial = new THREE.MeshLambertMaterial({
+                color: mediumOfficeGrey,
+                transparent: true,
+                opacity: 0.9
+            });
+            const smokestack = new THREE.Mesh(smokestackGeometry, smokestackMaterial);
+            smokestack.position.set(locomotiveLength / 2 - 1.5, 3 + effectiveWheelRadius, 0); 
+            smokestack.castShadow = true;
+
+            const smokestackEdges = new THREE.EdgesGeometry(smokestackGeometry);
+            const smokestackOutline = new THREE.LineSegments(smokestackEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+            smokestack.add(smokestackOutline);
+            body.add(smokestack); // Add smokestack to body for relative positioning
+
+            return body;
+        }
+
+        function createCarBody(eraType) {
+            const bodyGeometry = new THREE.BoxGeometry(carLength, 2.5, 3);
+            const bodyMaterial = new THREE.MeshLambertMaterial({
+                color: getThemedEraColor(mediaEras[eraType].color),
+                map: paperSpeckleTexture,
+                transparent: true,
+                opacity: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 2 + effectiveWheelRadius;
+            body.castShadow = true;
+            body.receiveShadow = true;
+
+            const bodyEdges = new THREE.EdgesGeometry(bodyGeometry);
+            const bodyOutline = new THREE.LineSegments(bodyEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+            body.add(bodyOutline);
+
+            // Symbolic content
+            const symbols = createSymbolicContent(eraType, 2 + effectiveWheelRadius);
+            body.add(symbols); // Add symbols to body for relative positioning
+
+            return body;
+        }
+
+        function createSymbolicContent(eraType, baseHeight) {
+            const symbolGroup = new THREE.Group();
+            const eraData = mediaEras[eraType];
+            const color = getThemedEraColor(eraData.color);
+
+            switch (eraData.symbols) {
+                case 'books':
+                    for (let i = 0; i < 3; i++) {
+                        const bookGeometry = new THREE.BoxGeometry(1.5, 0.3, 2);
+                        const bookMaterial = new THREE.MeshLambertMaterial({
+                            color: color.clone().offsetHSL(i * 0.05, 0, 0),
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        const book = new THREE.Mesh(bookGeometry, bookMaterial);
+                        book.position.set(0, baseHeight + i * 0.4 - (2 + effectiveWheelRadius), 0); // Position relative to parent body
+                        book.rotation.y = i * 0.2;
+                        symbolGroup.add(book);
+                        
+                        const bookEdges = new THREE.EdgesGeometry(bookGeometry);
+                        const bookOutline = new THREE.LineSegments(bookEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+                        book.add(bookOutline);
+                    }
+                    break;
+
+                case 'waves':
+                    for (let i = 0; i < 3; i++) {
+                        const ringGeometry = new THREE.TorusGeometry(1 + i * 0.5, 0.1, 8, 32);
+                        const ringMaterial = new THREE.MeshLambertMaterial({
+                            color: color,
+                            transparent: true,
+                            opacity: 0.4 - i * 0.1
+                        });
+                        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                        ring.position.y = baseHeight + 1.5 - (2 + effectiveWheelRadius); // Position relative to parent body
+                        ring.rotation.x = Math.PI / 2;
+                        symbolGroup.add(ring);
+                        
+                        ring.userData = { 
+                            originalScale: 1 + i * 0.5,
+                            animationOffset: i * Math.PI / 3
+                        };
+                    }
+                    break;
+
+                case 'screen':
+                    const screenGeometry = new THREE.BoxGeometry(2, 1.5, 0.2);
+                    const screenMaterial = new THREE.MeshLambertMaterial({
+                        color: new THREE.Color(darkOfficeGrey_hex).offsetHSL(0,0,-0.1),
+                        transparent: true,
+                        opacity: 0.8
+                    });
+                    const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+                    screen.position.y = baseHeight + 0.5 - (2 + effectiveWheelRadius); // Position relative to parent body
+                    symbolGroup.add(screen);
+
+                    const screenEdges = new THREE.EdgesGeometry(screenGeometry);
+                    const screenOutline = new THREE.LineSegments(screenEdges, new THREE.LineBasicMaterial({ color: edgeColor }));
+                    screen.add(screenOutline);
+
+                    const glowMaterial = new THREE.MeshLambertMaterial({
+                        color: new THREE.Color(color).offsetHSL(0, 0.2, 0.1),
+                        transparent: true,
+                        opacity: 0.3,
+                        emissive: new THREE.Color(color).offsetHSL(0, 0.1, 0.05),
+                        emissiveIntensity: 0.5
+                    });
+                    const glow = new THREE.Mesh(screenGeometry, glowMaterial);
+                    glow.position.y = baseHeight + 0.5 - (2 + effectiveWheelRadius);
+                    glow.position.z = 0.1;
+                    glow.scale.set(1.1, 1.1, 1.1);
+                    symbolGroup.add(glow);
+                    glow.userData.animType = 'flicker';
+                    break;
+
+                case 'network':
+                    const nodePositions = [
+                        { x: 0, y: 0, z: 0 },
+                        { x: 0.8, y: 0.4, z: 0.4 },
+                        { x: -0.8, y: -0.4, z: 0.4 },
+                        { x: 0.4, y: 0.8, z: -0.4 },
+                        { x: -0.4, y: -0.8, z: -0.4 }
+                    ];
+
+                    nodePositions.forEach((pos, i) => {
+                        const nodeGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+                        const nodeMaterial = new THREE.MeshLambertMaterial({
+                            color: color,
+                            emissive: color.clone().multiplyScalar(0.3),
+                            transparent: true,
+                            opacity: 0.9
+                        });
+                        const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+                        node.position.set(pos.x, pos.y + baseHeight + 0.5 - (2 + effectiveWheelRadius), pos.z); // Position relative to parent body
+                        node.castShadow = true;
+                        symbolGroup.add(node);
+
+                        if (i > 0) {
+                            const points = [
+                                new THREE.Vector3(0, baseHeight + 0.5 - (2 + effectiveWheelRadius), 0),
+                                new THREE.Vector3(pos.x, pos.y + baseHeight + 0.5 - (2 + effectiveWheelRadius), pos.z)
+                            ];
+                            const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                            const lineMaterial = new THREE.LineBasicMaterial({
+                                color: color,
+                                transparent: true,
+                                opacity: 0.6
+                            });
+                            const line = new THREE.Line(lineGeometry, lineMaterial);
+                            symbolGroup.add(line);
+                        }
+                    });
+                    break;
+            }
+            return symbolGroup;
+        }
+
+        function addTrainCar(isLocomotive, eraType) {
+            const carData = {
+                group: new THREE.Group(), // Parent group for the entire car/locomotive
+                wheels: [], // Array of wheel meshes for this car
+                type: isLocomotive ? 'Locomotive' : 'Car',
+                era: eraType || null, // Only for cars
+                currentArcLength: 0, // Position on the track as arc length
+                targetArcLength: 0,
+                speed: 0 // Local speed for smoother acceleration
+            };
+
+            const wheelPositions = [
+                { x: (isLocomotive ? locomotiveLength : carLength) / 2 - 1.5, z: -trackGauge / 2 },
+                { x: (isLocomotive ? locomotiveLength : carLength) / 2 - 1.5, z: trackGauge / 2 },
+                { x: -(isLocomotive ? locomotiveLength : carLength) / 2 + 1.5, z: -trackGauge / 2 },
+                { x: -(isLocomotive ? locomotiveLength : carLength) / 2 + 1.5, z: trackGauge / 2 }
+            ];
+
+            // Create body (and integrate smokestack/symbols into body mesh)
+            const carBodyMesh = isLocomotive ? createLocomotiveBody() : createCarBody(eraType);
+            carData.group.add(carBodyMesh);
+
+            // Create wheels
+            wheelPositions.forEach(pos => {
+                const wheel = createWheelMesh();
+                wheel.position.set(pos.x, effectiveWheelRadius - (2 + effectiveWheelRadius) , pos.z); // Adjust Y-pos relative to car body's internal 0
+                carData.group.add(wheel);
+                carData.wheels.push(wheel);
+            });
+
+            // Coupling mechanism (only for cars)
+            if (!isLocomotive) {
+                const couplingGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1, 16);
+                const couplingMaterial = new THREE.MeshLambertMaterial({ color: couplingColor });
+                const coupling = new THREE.Mesh(couplingGeometry, couplingMaterial);
+                coupling.rotation.x = Math.PI / 2;
+                coupling.position.set(-carLength / 2 - 0.5, 2 + effectiveWheelRadius, 0); // Position at front of car (relative to body)
+                carData.group.add(coupling);
+                
+                // Add an outward facing coupling at the back for the next car to connect
+                const rearCoupling = coupling.clone();
+                rearCoupling.position.set(carLength / 2 + 0.5, 2 + effectiveWheelRadius, 0);
+                carData.group.add(rearCoupling);
+            }
+            
+            // Set userData for click interaction
+            carData.group.userData = {
+                isLocomotive: isLocomotive,
+                era: eraType,
+                clickable: true,
+                carData: carData // Reference back to the car data object
+            };
+            
+            scene.add(carData.group);
+            
+            // Add to trainCars array. Locomotive is always the first.
+            if (isLocomotive) {
+                trainCars.unshift(carData); // Add to beginning
+            } else {
+                trainCars.push(carData);
+            }
+            updateTrainInfoDisplay(); // Update UI
+        }
+
+        // --- UI & Event Handlers (Adapted from Manilla Office) ---
+
+        function setupUIControls() {
+            // Speed control
+            const speedInput = document.getElementById('speed');
+            const speedValueDisplay = document.getElementById('speedValue');
+            speedInput.addEventListener('input', (e) => {
+                currentSpeed = parseFloat(e.target.value);
+                speedValueDisplay.textContent = currentSpeed.toFixed(1);
+                updateTrainInfoDisplay();
+            });
+            speedInput.value = currentSpeed; // Set initial UI value
+            speedValueDisplay.textContent = currentSpeed.toFixed(1);
+
+            // Add Car button
+            document.getElementById('addCarBtn').addEventListener('click', () => { // Renamed from addCar
+                const newEraIndex = trainCars.length - 1; // Start with Print (0), then Radio (1), etc.
+                const eraKeys = Object.keys(mediaEras);
+                const eraType = eraKeys[newEraIndex % eraKeys.length]; // Cycle through eras
+                addTrainCar(false, eraType);
+            });
+
+            // Reset Simulation button
+            document.getElementById('resetSim').addEventListener('click', () => {
+                // Remove all current train cars from scene
+                trainCars.forEach(car => scene.remove(car.group));
+                trainCars = [];
+                // Reset speed to default
+                currentSpeed = 5;
+                document.getElementById('speed').value = currentSpeed;
+                document.getElementById('speedValue').textContent = currentSpeed.toFixed(1);
+                // Re-add initial locomotive and cars
+                addTrainCar(true);
+                addTrainCar(false, 'Print');
+                addTrainCar(false, 'Radio');
+                addTrainCar(false, 'Television');
+                addTrainCar(false, 'Internet');
+                // Reset camera view
+                toggleView(0); // Reset to overview
+                // Reset train angle
+                trainAngle = 0;
+                // Reset focus and dialogue era
+                focusedCarIndex = 0;
+                currentEraDialogue = 'Print';
+                updateTrainInfoDisplay();
+            });
+            
+            // Toggle View button
+            document.getElementById('toggleView').addEventListener('click', () => {
+                currentView = (currentView + 1) % 3;
+                // Camera position will be set in animate loop for Following view
+                if (currentView === 0) { camera.position.set(trackRadius * 1.5, trackRadius * 0.8, trackRadius * 1.5); camera.lookAt(0,0,0); }
+                else if (currentView === 1) { camera.position.set(0, trackRadius * 0.5, trackRadius * 2); camera.lookAt(0,0,0); }
+            });
+
+            // Focus Car button
+            document.getElementById('focusCar').addEventListener('click', focusCar);
+
+            // Talk to Era button
+            document.getElementById('talkToEra').addEventListener('click', openDialogue);
+
+            // Dialogue box buttons
+            document.getElementById('closeDialogue').addEventListener('click', closeDialogue);
+            document.getElementById('sendMessage').addEventListener('click', sendMessage);
+            document.getElementById('userInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // --- Debug UI Listeners ---
+            const locoYOffsetSlider = document.getElementById('locoYOffset');
+            const locoYOffsetValSpan = document.getElementById('locoYOffsetVal');
+            locoYOffsetSlider.addEventListener('input', (e) => {
+                debugLocoYOffset = parseFloat(e.target.value);
+                locoYOffsetValSpan.textContent = debugLocoYOffset.toFixed(2);
+            });
+            locoYOffsetSlider.value = debugLocoYOffset;
+            locoYOffsetValSpan.textContent = debugLocoYOffset.toFixed(2);
+
+            const wheelStaticRotXSlider = document.getElementById('wheelStaticRotX');
+            const wheelStaticRotXValSpan = document.getElementById('wheelStaticRotXVal');
+            wheelStaticRotXSlider.addEventListener('input', (e) => {
+                debugWheelRotX = parseFloat(e.target.value) * (Math.PI / 180);
+                wheelStaticRotXValSpan.textContent = e.target.value + '°';
+                applyDebugWheelStaticRotations();
+            });
+            wheelStaticRotXSlider.value = debugWheelRotX * (180 / Math.PI);
+            wheelStaticRotXValSpan.textContent = (debugWheelRotX * (180 / Math.PI)).toFixed(0) + '°';
+
+            const wheelStaticRotYSlider = document.getElementById('wheelStaticRotY');
+            const wheelStaticRotYValSpan = document.getElementById('wheelStaticRotYVal');
+            wheelStaticRotYSlider.addEventListener('input', (e) => {
+                debugWheelRotY = parseFloat(e.target.value) * (Math.PI / 180);
+                wheelStaticRotYValSpan.textContent = e.target.value + '°';
+                applyDebugWheelStaticRotations();
+            });
+            wheelStaticRotYSlider.value = debugWheelRotY * (180 / Math.PI);
+            wheelStaticRotYValSpan.textContent = (debugWheelRotY * (180 / Math.PI)).toFixed(0) + '°';
+
+            const wheelStaticRotZSlider = document.getElementById('wheelStaticRotZ');
+            const wheelStaticRotZValSpan = document.getElementById('wheelStaticRotZVal');
+            wheelStaticRotZSlider.addEventListener('input', (e) => {
+                debugWheelRotZ = parseFloat(e.target.value) * (Math.PI / 180);
+                wheelStaticRotZValSpan.textContent = e.target.value + '°';
+                applyDebugWheelStaticRotations();
+            });
+            wheelStaticRotZSlider.value = debugWheelRotZ * (180 / Math.PI);
+            wheelStaticRotZValSpan.textContent = (debugWheelRotZ * (180 / Math.PI)).toFixed(0) + '°';
+
+            const wheelRollingAxisSelect = document.getElementById('wheelRollingAxis');
+            wheelRollingAxisSelect.addEventListener('change', (e) => {
+                debugWheelRollingAxis = e.target.value;
+            });
+            wheelRollingAxisSelect.value = debugWheelRollingAxis;
+
+            // Mouse clicks for car interaction (raycaster)
+            renderer.domElement.addEventListener('click', onMouseClick);
+        }
+
+        function updateTrainInfoDisplay() {
+            document.getElementById('trainInfoDisplay').textContent = `Cars: ${trainCars.length} | Speed: ${currentSpeed.toFixed(1)}`;
+            document.getElementById('currentEra').textContent = `Era: ${currentEraDialogue} Era`;
+        }
+
+        // --- Helper functions for UI and Dialogue (from Manilla Office) ---
+
+        function applyDebugWheelStaticRotations() {
+            trainCars.forEach(carData => {
+                carData.wheels.forEach(wheel => {
+                    wheel.rotation.set(debugWheelRotX, debugWheelRotY, debugWheelRotZ);
+                });
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseClick(event) {
+            if (document.getElementById('dialogue').classList.contains('active')) return;
+
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            let clickedCarData = null;
+            for (const carData of trainCars) {
+                const intersects = raycaster.intersectObjects(carData.group.children, true); // Check all children of the car group
+                if (intersects.length > 0) {
+                    clickedCarData = carData;
+                    break;
+                }
+            }
+            
+            if (clickedCarData && clickedCarData.era) { // Ensure it's a car with an era (not locomotive)
+                currentEraDialogue = clickedCarData.era;
+                openDialogue();
+            }
+        }
+
+        function toggleView(viewIndex = -1) { // Added optional parameter to force a view
+            if (viewIndex !== -1) {
+                currentView = viewIndex;
+            } else {
+                currentView = (currentView + 1) % 3;
+            }
+            
+            // Camera position is set in animate loop for 'Following' view
+            if (currentView === 0) { // Overview
+                camera.position.set(trackRadius * 1.5, trackRadius * 0.8, trackRadius * 1.5);
+                controls.target.set(0,0,0);
+            } else if (currentView === 1) { // Side view
+                camera.position.set(0, trackRadius * 0.5, trackRadius * 2);
+                controls.target.set(0,0,0);
+            }
+            controls.enabled = (currentView !== 2); // Disable controls in following view
+            controls.update(); // Update controls target for non-following views
+        }
+
+        function focusCar() {
+            // Find the next actual car (not locomotive)
+            let nextCarIndex = (focusedCarIndex + 1);
+            if (nextCarIndex >= trainCars.length) { // Cycle back to first car (index 1 is first actual car)
+                 nextCarIndex = 1; 
+            }
+            focusedCarIndex = nextCarIndex;
+            
+            const carData = trainCars[focusedCarIndex];
+            currentEraDialogue = carData.era;
+            updateTrainInfoDisplay();
+            
+            // Adjust camera to look at the focused car
+            const carGroup = carData.group;
+            const carPosition = carGroup.position;
+            const offsetVec = new THREE.Vector3();
+            carGroup.getWorldDirection(offsetVec); 
+            offsetVec.negate(); 
+            offsetVec.multiplyScalar(20); // Distance behind
+
+            camera.position.copy(carPosition).add(offsetVec);
+            camera.position.y = carPosition.y + 10; 
+            controls.target.copy(carPosition); // Update orbit controls target
+            controls.update();
+        }
+
+        function openDialogue() {
+            document.getElementById('dialogue').classList.add('active'); 
+            document.getElementById('dialogueTitle').textContent = `Conversation with ${currentEraDialogue} Era`;
+            document.getElementById('userInput').focus();
+            document.getElementById('messageHistory').innerHTML = `
+                <div class="message era">
+                    <strong>${currentEraDialogue} Era:</strong> ${mediaEras[currentEraDialogue].personality}
+                </div>
+            `;
+            document.getElementById('messageHistory').scrollTop = document.getElementById('messageHistory').scrollHeight; 
+        }
+
+        function closeDialogue() {
+            document.getElementById('dialogue').classList.remove('active');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const history = document.getElementById('messageHistory');
+            
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message user';
+            userDiv.textContent = `You: ${message}`;
+            history.appendChild(userDiv);
+            history.scrollTop = history.scrollHeight; 
+
+            const eraResponse = getEraResponse(currentEraDialogue, message);
+            const eraDiv = document.createElement('div');
+            eraDiv.className = 'message era';
+            eraDiv.innerHTML = `<strong>${currentEraDialogue} Era:</strong> ${eraResponse}`;
+            
+            setTimeout(() => {
+                history.appendChild(eraDiv);
+                history.scrollTop = history.scrollHeight; 
+            }, 700); 
+
+            input.value = ''; 
+        }
+
+        function getEraResponse(eraType, userMessage) {
+            const eraData = mediaEras[eraType];
+            const responses = eraData.responses;
+            const lowerCaseMessage = userMessage.toLowerCase();
+            
+            if (lowerCaseMessage.includes('knowledge') || lowerCaseMessage.includes('information') || lowerCaseMessage.includes('learn')) {
+                return responses.knowledge;
+            } else if (lowerCaseMessage.includes('technology') || lowerCaseMessage.includes('technical') || lowerCaseMessage.includes('how')) {
+                return responses.technology;
+            } else if (lowerCaseMessage.includes('society') || lowerCaseMessage.includes('culture') || lowerCaseMessage.includes('people') || lowerCaseMessage.includes('social')) {
+                return responses.society;
+            } else if (lowerCaseMessage.includes('future') || lowerCaseMessage.includes('next') || lowerCaseMessage.includes('evolution') || lowerCaseMessage.includes('what comes')) {
+                return responses.future;
+            } else if (lowerCaseMessage.includes('change') || lowerCaseMessage.includes('transform') || lowerCaseMessage.includes('influence') || lowerCaseMessage.includes('impact')) {
+                return responses.change;
+            } else if (lowerCaseMessage.includes('memory') || lowerCaseMessage.includes('remember') || lowerCaseMessage.includes('history') || lowerCaseMessage.includes('past')) {
+                return responses.memory;
+            } else if (lowerCaseMessage.includes('hello') || lowerCaseMessage.includes('hi') || lowerCaseMessage.includes('greet')) {
+                return eraData.personality; 
+            } else {
+                const generalResponses = [
+                    "That's an interesting thought. In my era, we focused on...",
+                    "Such inquiries remind me of the foundational principles of my time.",
+                    "To truly understand, you must consider the unique perspective I offer."
+                ];
+                return generalResponses[Math.floor(Math.random() * generalResponses.length)];
+            }
+        }
+
+        // --- Main Animation Loop (Revised Physics) ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = clock.getDelta(); 
+
+            // Update train's angular position based on overall speed
+            const angularSpeed = currentSpeed / trackRadius;
+            trainAngle += angularSpeed * deltaTime;
+
+            // --- Update Train Segment Positions and Rotations ---
+            let currentTrainArcLength = 0; // Total arc length from front of locomotive
+            
+            for (let i = 0; i < trainCars.length; i++) {
+                const carData = trainCars[i];
+                const segmentLength = carData.type === 'Locomotive' ? locomotiveLength : carLength;
+
+                // Calculate the center point of the current segment for arc length calculation
+                // This means the 'pivot point' for the chain is at the center of each car
+                // For the first segment (locomotive), its start is at trainAngle
+                // For subsequent segments, they are positioned behind the previous one
+                
+                if (i > 0) { // For cars, calculate position relative to the previous segment
+                    const prevCarData = trainCars[i-1];
+                    const prevSegmentLength = prevCarData.type === 'Locomotive' ? locomotiveLength : carLength;
+                    
+                    // Arc length to the center of THIS car
+                    cumulativeArcLength = (prevSegmentLength / 2) + (carLength / 2);
+                    
+                    const angleOffset = cumulativeArcLength / trackRadius; // Convert linear length to angle
+                    
+                    // The car's angle is based on the previous car's angle, shifted back
+                    const targetCarAngle = prevCarData.group.rotation.y - debugLocoYOffset - angleOffset;
+
+                    carData.group.position.x = trackRadius * Math.cos(targetCarAngle);
+                    carData.group.position.z = trackRadius * Math.sin(targetCarAngle);
+                    carData.group.rotation.y = targetCarAngle + debugLocoYOffset; // Apply same tangential offset
+                    
+                } else { // Locomotive (first segment)
+                    carData.group.position.x = trackRadius * Math.cos(trainAngle);
+                    carData.group.position.z = trackRadius * Math.sin(trainAngle);
+                    carData.group.rotation.y = trainAngle + debugLocoYOffset; // Apply debug offset
+                }
+
+                // Update wheels for current segment
+                carData.wheels.forEach(wheel => {
+                    const rotationAmount = (currentSpeed / effectiveWheelRadius) * deltaTime;
+                    if (debugWheelRollingAxis === 'x') wheel.rotation.x -= rotationAmount;
+                    else if (debugWheelRollingAxis === 'y') wheel.rotation.y -= rotationAmount;
+                    else if (debugWheelRollingAxis === 'z') wheel.rotation.z -= rotationAmount;
+                });
+            }
+
+            // Animate symbolic elements
+            trainCars.forEach(carData => {
+                const eraType = carData.era;
+                if (!eraType) return; // Skip locomotive
+                const symbols = carData.group.children.find(child => child.isGroup && child.children.length > 0 && child.children[0].type !== 'Mesh'); // Find symbols group
+
+                if (eraType === 'Radio' && symbols) {
+                    symbols.children.forEach(child => {
+                        if (child.geometry && child.geometry.type === 'TorusGeometry') { 
+                            const animOffset = child.userData.animationOffset || 0;
+                            const scaleFactor = 1 + Math.sin(clock.elapsedTime * 2 + animOffset) * 0.2;
+                            child.scale.setScalar(scaleFactor);
+                            child.material.opacity = 0.4 - (scaleFactor - 1) * 0.5;
+                        }
+                    });
+                } else if (eraType === 'Television' && symbols) {
+                    symbols.children.forEach(child => {
+                        if (child.userData.animType === 'flicker') { 
+                            child.material.opacity = 0.3 + Math.sin(clock.elapsedTime * 20) * 0.1;
+                            child.material.emissiveIntensity = 0.5 + Math.sin(clock.elapsedTime * 15) * 0.2;
+                        }
+                    });
+                }
+            });
+
+            // Camera following for 'Following View'
+            if (currentView === 2) {
+                const targetLocoPos = trainCars[0].group.position;
+                const forwardDir = new THREE.Vector3();
+                trainCars[0].group.getWorldDirection(forwardDir); 
+                forwardDir.negate(); 
+
+                const cameraOffsetDistance = 20; 
+                const cameraOffsetHeight = 10;  
+
+                camera.position.copy(targetLocoPos).add(forwardDir.multiplyScalar(cameraOffsetDistance));
+                camera.position.y = targetLocoPos.y + cameraOffsetHeight;
+                controls.target.copy(targetLocoPos); // Update orbit controls target for following view
+            }
+
+            controls.update(); // Update orbit controls for damping
+            renderer.render(scene, camera);
+        }
+
+        // Initialize the scene
+        init();
+    </script>
+</body>
+</html>

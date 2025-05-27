@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>True Train - Rolling Wheel Test</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #2c3e50;
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            pointer-events: none;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            font-size: 12px;
+            max-width: 250px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid #444;
+        }
+        .control-group h3 {
+            margin: 5px 0;
+            color: #4a90e2;
+        }
+        .axis-label {
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Rolling Wheel Test - Transformation Controls</div>
+    <div id="controls">
+        <div class="control-group">
+            <h3>Position</h3>
+            <div>X: <input type="range" id="posX" min="-5" max="5" step="0.1" value="0"> <span id="posXVal">0.0</span></div>
+            <div>Y: <input type="range" id="posY" min="0" max="5" step="0.1" value="1"> <span id="posYVal">1.0</span></div>
+            <div>Z: <input type="range" id="posZ" min="-5" max="5" step="0.1" value="0"> <span id="posZVal">0.0</span></div>
+        </div>
+        <div class="control-group">
+            <h3>Rotation (degrees)</h3>
+            <div>X: <input type="range" id="rotX" min="-180" max="180" step="1" value="0"> <span id="rotXVal">0°</span></div>
+            <div>Y: <input type="range" id="rotY" min="-180" max="180" step="1" value="0"> <span id="rotYVal">0°</span></div>
+            <div>Z: <input type="range" id="rotZ" min="-180" max="180" step="1" value="0"> <span id="rotZVal">0°</span></div>
+        </div>
+        <div class="control-group">
+            <h3>Scale</h3>
+            <div>X: <input type="range" id="scaleX" min="0.1" max="3" step="0.1" value="1"> <span id="scaleXVal">1.0</span></div>
+            <div>Y: <input type="range" id="scaleY" min="0.1" max="3" step="0.1" value="1"> <span id="scaleYVal">1.0</span></div>
+            <div>Z: <input type="range" id="scaleZ" min="0.1" max="3" step="0.1" value="1"> <span id="scaleZVal">1.0</span></div>
+        </div>
+        <div class="control-group">
+            <button id="resetBtn">Reset to Default</button>
+            <button id="lockBtn">Lock Transform</button>
+        </div>
+    </div>
+    <div id="axis-labels">
+        <div class="axis-label" style="left: 20px; top: 50%;">-X</div>
+        <div class="axis-label" style="right: 20px; top: 50%;">+X</div>
+        <div class="axis-label" style="left: 50%; top: 20px; transform: translateX(-50%);">+Y</div>
+        <div class="axis-label" style="left: 50%; bottom: 20px; transform: translateX(-50%);">-Y</div>
+        <div class="axis-label" style="left: 50%; top: 50%; transform: translate(30px, -30px);">+Z</div>
+        <div class="axis-label" style="left: 50%; top: 50%; transform: translate(-50px, 30px);">-Z</div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x2c3e50);
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 5, 5);
+        camera.lookAt(0, 0, 0);
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        // Ground plane
+        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        const groundMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x8b8c7a, // Manilla Office color palette - light grey
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Grid helper for better spatial reference
+        const gridHelper = new THREE.GridHelper(20, 20, 0x555555, 0x333333);
+        scene.add(gridHelper);
+        
+        // Axes helper (X:red, Y:green, Z:blue)
+        const axesHelper = new THREE.AxesHelper(5);
+        scene.add(axesHelper);
+        
+        // Wheel parameters
+        const wheelRadius = 1;
+        const wheelWidth = 0.3;
+        const wheelSegments = 32;
+        
+        // Create wheel (CylinderGeometry by default has height along Y-axis)
+        const wheelGeometry = new THREE.CylinderGeometry(
+            wheelRadius,    // radius top
+            wheelRadius,    // radius bottom
+            wheelWidth,     // height
+            wheelSegments   // radial segments
+        );
+        
+        const wheelMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x4a4a4a, // Dark grey for the wheel
+            roughness: 0.7,
+            metalness: 0.3
+        });
+        
+        // Create a group for the wheel assembly
+        const wheelGroup = new THREE.Group();
+        
+        // Create the wheel mesh
+        const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheel.position.y = 0;  // Center in the group
+        wheel.castShadow = true;
+        wheel.receiveShadow = true;
+        
+        // Add visual markings to the wheel
+        const markingsGeometry = new THREE.CylinderGeometry(
+            wheelRadius * 0.95, // Slightly smaller than wheel
+            wheelRadius * 0.95,
+            wheelWidth * 1.1,   // Slightly thicker than wheel
+            wheelSegments,      // Same segments as wheel
+            1,                  // Height segments
+            true               // Open ended
+        );
+        
+        // Create a wireframe for the markings
+        const markingsMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
+        });
+        
+        const wheelMarkings = new THREE.Mesh(markingsGeometry, markingsMaterial);
+        wheel.add(wheelMarkings);
+        
+        // Add red and yellow stripes to the wheel
+        const stripeCount = 8;
+        const stripeMaterial = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            side: THREE.DoubleSide
+        });
+        
+        for (let i = 0; i < stripeCount; i++) {
+            const angle = (i / stripeCount) * Math.PI * 2;
+            const stripe = new THREE.Mesh(
+                new THREE.BoxGeometry(wheelRadius * 1.1, wheelWidth * 1.2, 0.1),
+                stripeMaterial
+            );
+            stripe.position.set(
+                Math.cos(angle) * wheelRadius * 0.5,
+                0,
+                Math.sin(angle) * wheelRadius * 0.5
+            );
+            stripe.lookAt(new THREE.Vector3(0, 1, 0));
+            wheel.add(stripe);
+            
+            // Alternate colors
+            stripeMaterial.color.setHex(i % 2 === 0 ? 0xff0000 : 0xffff00);
+        }
+        
+        // Add wheel to the group
+        wheelGroup.add(wheel);
+        
+        // Add a small red cylinder to visualize the axle
+        const axleGeometry = new THREE.CylinderGeometry(
+            0.1,    // radius top
+            0.1,    // radius bottom
+            wheelWidth * 1.2,  // height
+            16      // segments
+        );
+        const axleMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.7
+        });
+        const axle = new THREE.Mesh(axleGeometry, axleMaterial);
+        wheelGroup.add(axle);
+        
+        // Position the wheel group above the ground
+        wheelGroup.position.y = wheelRadius;
+        
+        // Add wheel group to the scene
+        scene.add(wheelGroup);
+        
+        // Create a simple track
+        const trackWidth = 1.5;
+        const trackGeometry = new THREE.BoxGeometry(10, 0.1, trackWidth);
+        const trackMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x333333,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        
+        // Create track ties
+        for (let i = -4; i <= 4; i += 0.5) {
+            const tie = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.2, trackWidth * 1.5),
+                new THREE.MeshStandardMaterial({ 
+                    color: 0x5d4037,
+                    roughness: 0.9,
+                    metalness: 0.1
+                })
+            );
+            tie.position.set(i, 0.05, 0);
+            tie.receiveShadow = true;
+            scene.add(tie);
+        }
+        
+        // Add rails
+        const railGeometry = new THREE.BoxGeometry(10, 0.1, 0.1);
+        const railMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x888888,
+            roughness: 0.3,
+            metalness: 0.7
+        });
+        
+        const leftRail = new THREE.Mesh(railGeometry, railMaterial);
+        leftRail.position.set(0, 0.15, -trackWidth/2 + 0.05);
+        leftRail.receiveShadow = true;
+        scene.add(leftRail);
+        
+        const rightRail = new THREE.Mesh(railGeometry, railMaterial);
+        rightRail.position.set(0, 0.15, trackWidth/2 - 0.05);
+        rightRail.receiveShadow = true;
+        scene.add(rightRail);
+        
+        // Create axis helpers
+        const axisHelper = new THREE.AxesHelper(5);
+        scene.add(axisHelper);
+        
+        // Add axis labels
+        const makeTextSprite = (message, color = 'white') => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = 'Bold 20px Arial';
+            const metrics = context.measureText(message);
+            const width = metrics.width * 1.4;
+            const height = 30;
+            
+            canvas.width = width;
+            canvas.height = height;
+            context.fillStyle = 'rgba(0,0,0,0.7)';
+            context.fillRect(0, 0, width, height);
+            context.font = 'Bold 20px Arial';
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(message, width/2, height/2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            return sprite;
+        };
+        
+        // Add axis labels
+        const labelX = makeTextSprite('+X', '#ff0000');
+        labelX.position.set(5, 0, 0);
+        scene.add(labelX);
+        
+        const labelY = makeTextSprite('+Y', '#00ff00');
+        labelY.position.set(0, 5, 0);
+        scene.add(labelY);
+        
+        const labelZ = makeTextSprite('+Z', '#0000ff');
+        labelZ.position.set(0, 0, 5);
+        scene.add(labelZ);
+        
+        // Update the wheel reference for animation
+        const wheelForAnimation = wheelGroup;
+        
+        // Transformation controls
+        const posX = document.getElementById('posX');
+        const posY = document.getElementById('posY');
+        const posZ = document.getElementById('posZ');
+        const rotX = document.getElementById('rotX');
+        const rotY = document.getElementById('rotY');
+        const rotZ = document.getElementById('rotZ');
+        const scaleX = document.getElementById('scaleX');
+        const scaleY = document.getElementById('scaleY');
+        const scaleZ = document.getElementById('scaleZ');
+        
+        const updateTransform = () => {
+            // Update position
+            wheelGroup.position.x = parseFloat(posX.value);
+            wheelGroup.position.y = parseFloat(posY.value);
+            wheelGroup.position.z = parseFloat(posZ.value);
+            
+            // Update rotation (convert degrees to radians)
+            wheelGroup.rotation.x = parseFloat(rotX.value) * (Math.PI / 180);
+            wheelGroup.rotation.y = parseFloat(rotY.value) * (Math.PI / 180);
+            wheelGroup.rotation.z = parseFloat(rotZ.value) * (Math.PI / 180);
+            
+            // Update scale
+            wheelGroup.scale.set(
+                parseFloat(scaleX.value),
+                parseFloat(scaleY.value),
+                parseFloat(scaleZ.value)
+            );
+            
+            // Update display values
+            document.getElementById('posXVal').textContent = posX.value;
+            document.getElementById('posYVal').textContent = posY.value;
+            document.getElementById('posZVal').textContent = posZ.value;
+            document.getElementById('rotXVal').textContent = rotX.value + '°';
+            document.getElementById('rotYVal').textContent = rotY.value + '°';
+            document.getElementById('rotZVal').textContent = rotZ.value + '°';
+            document.getElementById('scaleXVal').textContent = scaleX.value;
+            document.getElementById('scaleYVal').textContent = scaleY.value;
+            document.getElementById('scaleZVal').textContent = scaleZ.value;
+        };
+        
+        // Add event listeners
+        [posX, posY, posZ, rotX, rotY, rotZ, scaleX, scaleY, scaleZ].forEach(slider => {
+            slider.addEventListener('input', updateTransform);
+        });
+        
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            // Reset position
+            posX.value = 0; posY.value = 1; posZ.value = 0;
+            // Reset rotation
+            rotX.value = 0; rotY.value = 0; rotZ.value = 0;
+            // Reset scale
+            scaleX.value = 1; scaleY.value = 1; scaleZ.value = 1;
+            // Update
+            updateTransform();
+        });
+        
+        // Lock button
+        let isLocked = false;
+        document.getElementById('lockBtn').addEventListener('click', () => {
+            isLocked = !isLocked;
+            const btn = document.getElementById('lockBtn');
+            btn.textContent = isLocked ? 'Unlock Transform' : 'Lock Transform';
+            btn.style.background = isLocked ? '#4CAF50' : '#f44336';
+            
+            // Disable/enable all sliders
+            [posX, posY, posZ, rotX, rotY, rotZ, scaleX, scaleY, scaleZ].forEach(slider => {
+                slider.disabled = isLocked;
+            });
+        });
+        
+        // Initial update
+        updateTransform();
+        
+        // Animation variables
+        const wheelCircumference = 2 * Math.PI * wheelRadius;
+        const speed = 2; // units per second
+        let distance = 0;
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Calculate rotation based on distance traveled
+            distance += speed * 0.016; // 0.016 is approximately 1/60th of a second
+            const rotationAngle = (distance % wheelCircumference) / wheelRadius;
+            
+            // Rotate wheel around its local Y-axis (blue line) to make it roll
+            wheelForAnimation.rotation.y = -rotationAngle;
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night Journey</title>
+    <style>
+        :root {
+            --color-bg: #080D1D;
+            --color-star: #F9F7E8;
+            --color-glow: #E0D9A2;
+            --color-text: #E1E1D3;
+            --color-lantern: #F2C55E;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            cursor: none;
+        }
+        
+        #starry-sky {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        .star {
+            position: absolute;
+            background-color: var(--color-star);
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 5s infinite ease-in-out;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        header h1 {
+            color: var(--color-text);
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            font-weight: 300;
+            text-transform: uppercase;
+        }
+        
+        .navigation-tools {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        .nav-tool {
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tool:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .lantern {
+            position: fixed;
+            width: 40px;
+            height: 60px;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .lantern-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><path fill="none" stroke="%23E1E1D3" stroke-width="3" d="M50,10 L50,0 M30,30 L70,30 L70,120 L30,120 Z"/><rect fill="%23F2C55E" opacity="0.6" x="35" y="35" width="30" height="80" rx="5"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .lantern-light {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(242, 197, 94, 0.3) 0%, rgba(242, 197, 94, 0) 70%);
+            pointer-events: none;
+        }
+        
+        .constellation {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        
+        .constellation-stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .constellation-star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: var(--color-star);
+            border-radius: 50%;
+            box-shadow: 0 0 5px 1px var(--color-glow);
+        }
+        
+        .constellation-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .constellation-line {
+            position: absolute;
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.3);
+            transform-origin: 0 0;
+        }
+        
+        .constellation-label {
+            position: absolute;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        
+        .constellation.visible {
+            opacity: 1;
+        }
+        
+        .constellation.visible .constellation-label {
+            opacity: 1;
+        }
+        
+        .project-panel {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background-color: rgba(8, 13, 29, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            color: var(--color-text);
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .project-panel.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: all;
+        }
+        
+        .project-panel h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        
+        .project-panel p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+        }
+        
+        .memory-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 0.8rem;
+            color: var(--color-text);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .memory-count {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        
+        .instruction {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            color: var(--color-text);
+            opacity: 0.7;
+            z-index: 10;
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .project-panel {
+                width: 95%;
+                padding: 15px;
+            }
+            
+            .instruction {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="starry-sky"></div>
+    
+    <header>
+        <h1>Night Journey</h1>
+    </header>
+    
+    <div class="navigation-tools">
+        <div class="nav-tool telescope" title="View All Constellations">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 1a7 7 0 0 0-7 7 7 7 0 0 0 7 7 7 7 0 0 0 7-7 7 7 0 0 0-7-7zm0 13a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/>
+            </svg>
+        </div>
+        <div class="nav-tool compass" title="Return to Center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm0-1A7 7 0 1 1 8 1a7 7 0 0 1 0 14z"/>
+                <path d="M8 3.5a.5.5 0 0 1 .5.5v4.5h4.5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5v-5a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="memory-indicator">
+        <span>Stars Discovered:</span>
+        <span class="memory-count">0/7</span>
+    </div>
+    
+    <div class="lantern" id="lantern">
+        <div class="lantern-body"></div>
+        <div class="lantern-light"></div>
+    </div>
+    
+    <div class="project-panel" id="project-panel">
+        <h2>Constellation Name</h2>
+        <p>Description of the selected constellation and related project details will appear here when you explore the night sky.</p>
+        <div class="project-meta">
+            <span class="project-date">Date: Unknown</span>
+            <span class="project-category">Category: Unknown</span>
+        </div>
+    </div>
+    
+    <div class="instruction">
+        Move mouse to navigate | Click to learn more
+    </div>
+
+    <script>
+        // Constellation data - each represents a portfolio project
+        const constellations = [
+            {
+                id: 'design-work',
+                name: 'Design Work',
+                description: 'A collection of UI/UX design projects focused on creating intuitive, beautiful interfaces. Each element carefully considered for both aesthetics and functionality.',
+                position: { x: 50, y: 40 },
+                size: { width: 300, height: 200 },
+                stars: [
+                    { x: 10, y: 20 },
+                    { x: 60, y: 30 },
+                    { x: 120, y: 40 },
+                    { x: 180, y: 70 },
+                    { x: 230, y: 50 },
+                    { x: 270, y: 120 },
+                    { x: 220, y: 150 },
+                    { x: 120, y: 160 }
+                ],
+                lines: [
+                    { start: 0, end: 1 },
+                    { start: 1, end: 2 },
+                    { start: 2, end: 3 },
+                    { start: 3, end: 4 },
+                    { start: 4, end: 5 },
+                    { start: 5, end: 6 },
+                    { start: 6, end: 7 },
+                    { start: 7, end: 0 }
+                ],
+                labelPosition: { x: 150, y: 100 },
+                date: '2023-2025',
+                category: 'UI/UX Design',
+                hasMemory: true,
+                memoryText: 'The patterns of these stars remind you of wireframes you once sketched under moonlight.'
+            },
+            {
+                id: 'web-development',
+                name: 'Web Development',
+                description: 'Interactive web applications built with modern technologies. These projects showcase frontend and backend skills with a focus on performance and user experience.',
+                position: { x: 75, y: 70 },
+                size: { width: 250, height: 230 },
+                stars: [
+                    { x: 20, y: 30 },
+                    { x: 50, y: 90 },
+                    { x: 100, y: 20 },
+                    { x: 150, y: 60 },
+                    { x: 200, y: 30 },
+                    { x: 230, y: 100 },
+                    { x: 180, y: 180 },
+                    { x: 70, y: 200 }
+                ],
+                lines: [
+                    { start: 0, end: 1 },
+                    { start: 1, end: 2 },
+                    { start: 2, end: 3 },
+                    { start: 3, end: 4 },
+                    { start: 4, end: 5 },
+                    { start: 5, end: 6 },
+                    { start: 6, end: 7 },
+                    { start: 7, end: 0 }
+                ],
+                labelPosition: { x: 125, y: 115 },
+                date: '2022-2025',
+                category: 'Frontend & Backend',
+                hasMemory: true,
+                memoryText: 'Lines of code flow like cosmic streams between these stars, forming structures from pure logic.'
+            },
+            {
+                id: 'interactive-media',
+                name: 'Interactive Media',
+                description: 'Experimental projects exploring the boundaries between digital and physical interaction. These works use sensors, data visualization, and real-time processing.',
+                position: { x: 25, y: 65 },
+                size: { width: 280, height: 180 },
+                stars: [
+                    { x: 30, y: 40 },
+                    { x: 90, y: 20 },
+                    { x: 150, y: 50 },
+                    { x: 200, y: 30 },
+                    { x: 250, y: 70 },
+                    { x: 220, y: 130 },
+                    { x: 130, y: 150 },
+                    { x: 60, y: 100 }
+                ],
+                lines: [
+                    { start: 0, end: 1 },
+                    { start: 1, end: 2 },
+                    { start: 2, end: 3 },
+                    { start: 3, end: 4 },
+                    { start: 4, end: 5 },
+                    { start: 5, end: 6 },
+                    { start: 6, end: 7 },
+                    { start: 7, end: 0 }
+                ],
+                labelPosition: { x: 140, y: 90 },
+                date: '2024-2025',
+                category: 'Creative Technology',
+                hasMemory: true,
+                memoryText: 'These stars pulse with data, transforming abstract numbers into tangible experiences you can almost touch.'
+            },
+            {
+                id: 'creative-coding',
+                name: 'Creative Coding',
+                description: 'Algorithmic art and generative design projects that explore the intersection of code and creativity. Visual experiments that blend mathematics, randomness, and aesthetic principles.',
+                position: { x: 30, y: 30 },
+                size: { width: 260, height: 220 },
+                stars: [
+                    { x: 40, y: 60 },
+                    { x: 90, y: 40 },
+                    { x: 150, y: 20 },
+                    { x: 200, y: 60 },
+                    { x: 230, y: 120 },
+                    { x: 180, y: 170 },
+                    { x: 100, y: 190 },
+                    { x: 50, y: 130 }
+                ],
+                lines: [
+                    { start: 0, end: 1 },
+                    { start: 1, end: 2 },
+                    { start: 2, end: 3 },
+                    { start: 3, end: 4 },
+                    { start: 4, end: 5 },
+                    { start: 5, end: 6 },
+                    { start: 6, end: 7 },
+                    { start: 7, end: 0 }
+                ],
+                labelPosition: { x: 130, y: 110 },
+                date: '2023-2025',
+                category: 'Generative Art',
+                hasMemory: true,
+                memoryText: 'Each of these stars holds an algorithm, a seed that grows into unexpected visual patterns.'
+            },
+            {
+                id: 'about',
+                name: 'About',
+                description: 'Learn about the creator behind these projects, their journey, skills, and approach to digital creation. Connect and explore collaboration opportunities.',
+                position: { x: 70, y: 20 },
+                size: { width: 200, height: 160 },
+                stars: [
+                    { x: 30, y: 40 },
+                    { x: 70, y: 20 },
+                    { x: 120, y: 40 },
+                    { x: 170, y: 30 },
+                    { x: 150, y: 80 },
+                    { x: 100, y: 120 },
+                    { x: 50, y: 100 }
+                ],
+                lines: [
+                    { start: 0, end: 1 },
+                    { start: 1, end: 2 },
+                    { start: 2, end: 3 },
+                    { start: 3, end: 4 },
+                    { start: 4, end: 5 },
+                    { start: 5, end: 6 },
+                    { start: 6, end: 0 }
+                ],
+                labelPosition: { x: 100, y: 70 },
+                date: 'Present',
+                category: 'Personal',
+                hasMemory: false
+            }
+        ];
+
+        // DOM Elements
+        const body = document.body;
+        const starrySky = document.getElementById('starry-sky');
+        const lantern = document.getElementById('lantern');
+        const projectPanel = document.getElementById('project-panel');
+        const memoryCount = document.querySelector('.memory-count');
+        
+        // State
+        let discoveredMemories = 0;
+        const totalMemories = constellations.filter(c => c.hasMemory).length;
+        const visitedConstellations = new Set();
+        let activeConstellation = null;
+        
+        // Initialize
+        function init() {
+            createStars();
+            createConstellations();
+            updateMemoryCount();
+            
+            // Set initial lantern position
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            lantern.style.left = `${viewportWidth / 2}px`;
+            lantern.style.top = `${viewportHeight / 2}px`;
+            
+            // Event listeners
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('click', onMouseClick);
+            
+            window.addEventListener('resize', onResize);
+            
+            // Tool buttons
+            document.querySelector('.telescope').addEventListener('click', showAllConstellations);
+            document.querySelector('.compass').addEventListener('click', returnToCenter);
+        }
+        
+        // Create background stars
+        function createStars() {
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // Random properties
+                const size = Math.random() * 2 + 1;
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const delay = Math.random() * 5;
+                const duration = 3 + Math.random() * 4;
+                
+                // Apply styles
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.animationDelay = `${delay}s`;
+                star.style.animationDuration = `${duration}s`;
+                
+                starrySky.appendChild(star);
+            }
+        }
+        
+        // Create constellation elements
+        function createConstellations() {
+            constellations.forEach(constellation => {
+                const constellationEl = document.createElement('div');
+                constellationEl.className = 'constellation';
+                constellationEl.id = constellation.id;
+                
+                // Position based on viewport size
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                constellationEl.style.left = `${constellation.position.x * viewportWidth / 100}px`;
+                constellationEl.style.top = `${constellation.position.y * viewportHeight / 100}px`;
+                constellationEl.style.width = `${constellation.size.width}px`;
+                constellationEl.style.height = `${constellation.size.height}px`;
+                
+                // Create stars container
+                const starsContainer = document.createElement('div');
+                starsContainer.className = 'constellation-stars';
+                
+                // Create stars
+                constellation.stars.forEach((star, index) => {
+                    const starEl = document.createElement('div');
+                    starEl.className = 'constellation-star';
+                    starEl.style.left = `${star.x}px`;
+                    starEl.style.top = `${star.y}px`;
+                    starsContainer.appendChild(starEl);
+                });
+                
+                // Create lines container
+                const linesContainer = document.createElement('div');
+                linesContainer.className = 'constellation-lines';
+                
+                // Create lines
+                constellation.lines.forEach(line => {
+                    const start = constellation.stars[line.start];
+                    const end = constellation.stars[line.end];
+                    
+                    const lineEl = document.createElement('div');
+                    lineEl.className = 'constellation-line';
+                    
+                    // Calculate line length and angle
+                    const dx = end.x - start.x;
+                    const dy = end.y - start.y;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Apply styles
+                    lineEl.style.width = `${length}px`;
+                    lineEl.style.left = `${start.x}px`;
+                    lineEl.style.top = `${start.y}px`;
+                    lineEl.style.transform = `rotate(${angle}rad)`;
+                    
+                    linesContainer.appendChild(lineEl);
+                });
+                
+                // Create label
+                const labelEl = document.createElement('div');
+                labelEl.className = 'constellation-label';
+                labelEl.textContent = constellation.name;
+                labelEl.style.left = `${constellation.labelPosition.x}px`;
+                labelEl.style.top = `${constellation.labelPosition.y}px`;
+                
+                // Add all elements to constellation
+                constellationEl.appendChild(starsContainer);
+                constellationEl.appendChild(linesContainer);
+                constellationEl.appendChild(labelEl);
+                
+                // Add to document
+                document.body.appendChild(constellationEl);
+                
+                // Store reference
+                constellation.element = constellationEl;
+                
+                // Add event listener
+                constellationEl.addEventListener('click', () => {
+                    showProjectDetails(constellation);
+                });
+            });
+        }
+        
+        // Handle mouse movement
+        function onMouseMove(e) {
+            // Move lantern to mouse position
+            lantern.style.left = `${e.clientX}px`;
+            lantern.style.top = `${e.clientY}px`;
+            
+            // Check if lantern is near any constellation
+            checkLanternProximity(e.clientX, e.clientY);
+        }
+        
+        // Check if lantern is near a constellation
+        function checkLanternProximity(x, y) {
+            const proximity = 150; // Detection radius
+            let nearConstellation = null;
+            
+            constellations.forEach(constellation => {
+                const constellationEl = constellation.element;
+                const rect = constellationEl.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(x - centerX, 2) + 
+                    Math.pow(y - centerY, 2)
+                );
+                
+                if (distance < proximity) {
+                    nearConstellation = constellation;
+                    constellationEl.classList.add('visible');
+                } else {
+                    constellationEl.classList.remove('visible');
+                }
+            });
+            
+            activeConstellation = nearConstellation;
+        }
+        
+        // Handle mouse click
+        function onMouseClick() {
+            if (activeConstellation) {
+                showProjectDetails(activeConstellation);
+            } else {
+                hideProjectDetails();
+            }
+        }
+        
+        // Show project details
+        function showProjectDetails(constellation) {
+            // Update panel content
+            projectPanel.querySelector('h2').textContent = constellation.name;
+            projectPanel.querySelector('p').textContent = constellation.description;
+            projectPanel.querySelector('.project-date').textContent = `Date: ${constellation.date}`;
+            projectPanel.querySelector('.project-category').textContent = `Category: ${constellation.category}`;
+            
+            // Show panel
+            projectPanel.classList.add('visible');
+            
+            // Check if this is a new memory
+            if (constellation.hasMemory && !visitedConstellations.has(constellation.id)) {
+                visitedConstellations.add(constellation.id);
+                discoveredMemories++;
+                updateMemoryCount();
+                
+                // Show memory text
+                setTimeout(() => {
+                    alert(`✨ Star Memory: ${constellation.memoryText}`);
+                }, 500);
+            }
+        }
+        
+        // Hide project details
+        function hideProjectDetails() {
+            projectPanel.classList.remove('visible');
+        }
+        
+        // Update memory count display
+        function updateMemoryCount() {
+            memoryCount.textContent = `${discoveredMemories}/${totalMemories}`;
+        }
+        
+        // Show all constellations (telescope function)
+        function showAllConstellations() {
+            constellations.forEach(constellation => {
+                constellation.element.classList.add('visible');
+            });
+            
+            setTimeout(() => {
+                constellations.forEach(constellation => {
+                    if (constellation !== activeConstellation) {
+                        constellation.element.classList.remove('visible');
+                    }
+                });
+            }, 3000);
+        }
+        
+        // Return to center
+        function returnToCenter() {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Smooth scroll to center
+            window.scrollTo({
+                top: viewportHeight / 2,
+                left: viewportWidth / 2,
+                behavior: 'smooth'
+            });
+            
+            // Move lantern to center
+            lantern.style.left = `${viewportWidth / 2}px`;
+            lantern.style.top = `${viewportHeight / 2}px`;
+            
+            // Hide all constellations
+            constellations.forEach(constellation => {
+                constellation.element.classList.remove('visible');
+            });
+            
+            // Hide project details
+            hideProjectDetails();
+        }
+        
+        // Handle window resize
+        function onResize() {
+            // Reposition constellations based on new viewport size
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            constellations.forEach(constellation => {
+                constellation.element.style.left = `${constellation.position.x * viewportWidth / 100}px`;
+                constellation.element.style.top = `${constellation.position.y * viewportHeight / 100}px`;
+            });
+        }
+        
+        // Initialize when document is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

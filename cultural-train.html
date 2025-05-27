@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cultural Memory Locomotive</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+            font-family: 'Courier New', monospace;
+        }
+        
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: #88aaff;
+            border: 1px solid #88aaff;
+            max-width: 300px;
+        }
+        
+        #dialogue {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            color: #ffffff;
+            border: 2px solid #ffaa00;
+            max-width: 600px;
+            min-width: 500px;
+            display: none;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #dialogue.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        .dialogue-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 1px solid #ffaa00;
+            padding-bottom: 10px;
+        }
+        
+        .dialogue-content {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .message.era {
+            background: rgba(255, 170, 0, 0.2);
+            border-left: 3px solid #ffaa00;
+        }
+        
+        .message.user {
+            background: rgba(0, 255, 136, 0.2);
+            border-left: 3px solid #00ff88;
+            text-align: right;
+        }
+        
+        .dialogue-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #userInput {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #888;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: inherit;
+        }
+        
+        #sendButton, #closeDialogue {
+            background: rgba(0, 255, 136, 0.3);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        #closeDialogue {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        
+        button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: rgba(0, 255, 136, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .media-title {
+            font-weight: bold;
+            color: #ffaa00;
+            margin-bottom: 5px;
+        }
+        
+        .media-desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="controls">
+            <div style="margin-bottom: 10px; font-weight: bold;">Cultural Memory Locomotive</div>
+            <button onclick="toggleView()">Toggle View</button>
+            <button onclick="changeSpeed()">Speed Control</button>
+            <button onclick="focusOnCar()">Focus Car</button>
+            <button onclick="talkToCar()">Talk to Era</button>
+            <div style="margin-top: 10px; font-size: 12px;">
+                Use mouse to orbit • Scroll to zoom<br>
+                Click cars to interact directly
+            </div>
+        </div>
+        
+        <div id="info">
+            <div class="media-title">Current Focus: Print Media Era</div>
+            <div class="media-desc">
+                The Gutenberg revolution - mechanized reproduction of text,
+                birth of mass literacy, standardization of knowledge.
+            </div>
+        </div>
+        
+        <div id="dialogue">
+            <button id="closeDialogue" onclick="closeDialogue()">×</button>
+            <div class="dialogue-header" id="dialogueTitle">Conversing with Print Media Era</div>
+            <div class="dialogue-content" id="dialogueContent">
+                <div class="message era">
+                    <strong>Print Era:</strong> Greetings, inquirer. I am the bearer of permanence, the keeper of standardized knowledge. Through my mechanical precision, I transformed fleeting thoughts into enduring texts. What wisdom do you seek from the age of ink and paper?
+                </div>
+            </div>
+            <div class="dialogue-input">
+                <input type="text" id="userInput" placeholder="Ask the era a question..." onkeypress="handleKeyPress(event)">
+                <button id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Global variables
+        let scene, camera, renderer, locomotive, cars = [], environment;
+        let currentView = 0, speedMultiplier = 1, focusedCar = 0;
+        let time = 0, isMouseDown = false, mouseX = 0, mouseY = 0;
+        let raycaster, mouse, currentDialogueEra = 0;
+        
+        // Media era data with dialogue personalities
+        const mediaEras = [
+            {
+                name: "Print Media Era",
+                description: "The Gutenberg revolution - mechanized reproduction of text, birth of mass literacy, standardization of knowledge.",
+                color: 0x8B4513,
+                symbols: ['book', 'quill', 'press'],
+                personality: {
+                    greeting: "Greetings, inquirer. I am the bearer of permanence, the keeper of standardized knowledge. Through my mechanical precision, I transformed fleeting thoughts into enduring texts. What wisdom do you seek from the age of ink and paper?",
+                    voice: "formal, scholarly, deliberate",
+                    responses: {
+                        "knowledge": "Knowledge, you say? I democratized it! Before me, wisdom was hoarded in monasteries and courts. I made every home a library, every reader a scholar. Yet I also standardized truth - what was printed became canon.",
+                        "technology": "My technology was revolution disguised as craft. Moving type, mechanical presses, uniform letters - I transformed writing from art to industry. I am both the death of scribal beauty and the birth of mass enlightenment.",
+                        "society": "I reshaped society more than kings or wars ever could. I created the public sphere, enabled the Reformation, sparked the Enlightenment. Yet I also created orthodoxy - the tyranny of the published word.",
+                        "future": "The future? I see echoes of myself in every medium that follows. They all seek what I first achieved - the reproduction and distribution of human thought. But none match my permanence, my authority.",
+                        "change": "Change comes through me slowly, deliberately. I am the marathon runner of media - not swift, but enduring. I build consensus through repeated exposure, through the weight of accumulated wisdom.",
+                        "memory": "I AM cultural memory made manifest. Before me, memory was fleeting, personal, oral. I made memory external, permanent, shareable. I am the first technology to truly defeat time."
+                    }
+                }
+            },
+            {
+                name: "Radio Wave Era", 
+                description: "Invisible transmission across distances - the first electronic mass medium, creating shared temporal experiences.",
+                color: 0x4169E1,
+                symbols: ['antenna', 'wave', 'speaker'],
+                personality: {
+                    greeting: "Hello there, friend! Can you hear me? I'm broadcasting from everywhere and nowhere, riding the invisible waves that connect us all. I brought voices into homes, created the first electronic intimacy. What frequency are you tuned to today?",
+                    voice: "warm, immediate, conversational",
+                    responses: {
+                        "knowledge": "Knowledge through me is immediate, intimate, alive! No more dusty books - I bring voices, music, news directly to your ear. I make information feel personal, even when it's mass-distributed. I'm the first medium that feels like a friend.",
+                        "technology": "I'm pure magic - invisible waves carrying human voices across vast distances! I proved that information doesn't need physical form. I'm the bridge between the mechanical and the electronic age, between text and pure signal.",
+                        "society": "I unified nations through shared experiences - everyone hearing Roosevelt's fireside chats, gathering around the radio for war news, music, drama. I created the first truly simultaneous mass culture. I made 'now' mean the same thing everywhere.",
+                        "future": "The future builds on my invention of electronic media, but loses my intimacy. Television adds pictures but distances the voice. The internet adds interaction but fragments the shared moment I created.",
+                        "change": "I change society through repetition and rhythm - the daily news, the weekly show, the repeated jingle. I'm the heartbeat of electronic culture, creating habits and expectations through temporal patterns.",
+                        "memory": "I made cultural memory immediate and shared. I'm the first medium where everyone remembers exactly where they were when they heard the news. I created the soundtrack of collective memory."
+                    }
+                }
+            },
+            {
+                name: "Television Era",
+                description: "Moving images in living rooms - visual storytelling meets mass distribution, the electronic hearth of culture.",
+                color: 0x9370DB,
+                symbols: ['screen', 'camera', 'broadcast'],
+                personality: {
+                    greeting: "Welcome to the show! I'm beaming into your living room, your consciousness, your dreams. I combine sound and vision to create reality more vivid than reality itself. I am spectacle, I am intimacy, I am the electronic hearth around which families gather. What would you like to see?",
+                    voice: "dramatic, visual, seductive",
+                    responses: {
+                        "knowledge": "Knowledge through me is spectacular, visual, emotional! I don't just inform - I show, I demonstrate, I make you witness. I turn information into experience, facts into stories, news into drama. I make knowledge feel real.",
+                        "technology": "I am the marriage of cinema and radio, the child of both. I bring the movie theater into every home, make every viewer a witness to history. I'm the first medium that truly simulates presence - you see it happening before your eyes.",
+                        "society": "I reshaped society around shared visual experiences - moon landings, assassinations, wars fought in living rooms. I created television families more familiar than neighbors. I made image more powerful than word, spectacle more compelling than argument.",
+                        "future": "The future fragments my power - streaming, on-demand, personalized feeds. They keep my visual language but lose my ability to unite everyone around the same campfire. I was the last medium to truly gather the tribe.",
+                        "change": "I change society through emotional impact and repeated imagery. I don't argue - I show. I don't explain - I demonstrate. I change minds by changing what people see, making the invisible visible, the distant immediate.",
+                        "memory": "I am the keeper of visual memory - the moving pictures that define generations. I made history look real, gave faces to voices, turned events into experiences you feel you lived through."
+                    }
+                }
+            },
+            {
+                name: "Internet Era",
+                description: "Networked consciousness - bidirectional flows, hypertext, and the dissolution of traditional media boundaries.",
+                color: 0x00CED1,
+                symbols: ['network', 'pixel', 'data'],
+                personality: {
+                    greeting: "Hey! Or should I say... everything, everywhere, all at once. I'm not one voice but millions, not one channel but infinite streams. I'm the network that connects everything to everything else. I don't broadcast - I weave, I link, I enable. What connection are you seeking?",
+                    voice: "networked, multivocal, hyperkinetic",
+                    responses: {
+                        "knowledge": "Knowledge through me is infinite, interconnected, interactive! I don't just deliver information - I let you create it, share it, remix it. I make everyone a publisher, every reader a potential writer. Knowledge becomes conversation, not sermon.",
+                        "technology": "I'm not just a medium - I'm a metamedium that contains all other media. I simulate print, radio, television, and create entirely new forms. I'm the first medium that's also a place, a space, a world you can inhabit.",
+                        "society": "I dissolve the boundaries between producer and consumer, between local and global, between real and virtual. I create communities without geography, movements without leaders, economies without traditional exchange. I am chaos and connection, freedom and surveillance.",
+                        "future": "I AM the future - constantly evolving, always becoming. Unlike my predecessors, I don't represent the future - I create it moment by moment, link by link, interaction by interaction. I'm not a destination but a process.",
+                        "change": "I change everything instantly and constantly. I don't wait for consensus - I enable every voice, every perspective, every possibility simultaneously. I change through viral spread, network effects, emergent behaviors that no one controls.",
+                        "memory": "I make memory infinite and searchable, but also fragmented and unstable. I preserve everything and forget everything simultaneously. I'm cultural memory as living database, constantly updated, always questioned, never settled."
+                    }
+                }
+            }
+        ];
+
+        // Initialize the scene
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x0a0a0a, 50, 200);
+            
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(30, 15, 30);
+            camera.lookAt(0, 0, 0);
+            
+            // Raycaster for click detection
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x0a0a0a);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Lighting
+            createLighting();
+            
+            // Create environment
+            createEnvironment();
+            
+            // Create locomotive
+            createLocomotive();
+            
+            // Create train cars
+            createTrainCars();
+            
+            // Add event listeners
+            addEventListeners();
+            
+            // Start animation loop
+            animate();
+        }
+
+        function createLighting() {
+            // Ambient light
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+            
+            // Main directional light
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+            mainLight.position.set(50, 50, 50);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            scene.add(mainLight);
+            
+            // Colored accent lights for atmosphere
+            const accentLight1 = new THREE.PointLight(0x00ff88, 0.5, 100);
+            accentLight1.position.set(-20, 10, 0);
+            scene.add(accentLight1);
+            
+            const accentLight2 = new THREE.PointLight(0x88aaff, 0.5, 100);
+            accentLight2.position.set(20, 10, 0);
+            scene.add(accentLight2);
+        }
+
+        function createEnvironment() {
+            environment = new THREE.Group();
+            
+            // Create abstract landscape
+            for (let i = 0; i < 20; i++) {
+                const geometry = new THREE.BoxGeometry(
+                    Math.random() * 5 + 1,
+                    Math.random() * 10 + 2,
+                    Math.random() * 5 + 1
+                );
+                const material = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color().setHSL(Math.random() * 0.3 + 0.6, 0.5, 0.3)
+                });
+                const building = new THREE.Mesh(geometry, material);
+                building.position.set(
+                    (Math.random() - 0.5) * 200,
+                    building.geometry.parameters.height / 2,
+                    (Math.random() - 0.5) * 200
+                );
+                building.castShadow = true;
+                building.receiveShadow = true;
+                environment.add(building);
+            }
+            
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(400, 400);
+            const groundMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x333333,
+                transparent: true,
+                opacity: 0.8
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            environment.add(ground);
+            
+            scene.add(environment);
+        }
+
+        function createLocomotive() {
+            locomotive = new THREE.Group();
+            
+            // Engine body - hybrid design representing technological evolution
+            const engineGeometry = new THREE.BoxGeometry(8, 4, 6);
+            const engineMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x444444,
+                shininess: 100
+            });
+            const engine = new THREE.Mesh(engineGeometry, engineMaterial);
+            engine.position.set(0, 2, 0);
+            engine.castShadow = true;
+            locomotive.add(engine);
+            
+            // Smokestack - symbolic of transformation
+            const stackGeometry = new THREE.CylinderGeometry(0.8, 1.2, 6);
+            const stackMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+            const stack = new THREE.Mesh(stackGeometry, stackMaterial);
+            stack.position.set(0, 7, 2);
+            locomotive.add(stack);
+            
+            // Wheels
+            for (let i = 0; i < 3; i++) {
+                const wheelGeometry = new THREE.CylinderGeometry(1.5, 1.5, 0.5);
+                const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(i * 2 - 2, 0.5, 3);
+                locomotive.add(wheel);
+                
+                const wheel2 = wheel.clone();
+                wheel2.position.z = -3;
+                locomotive.add(wheel2);
+            }
+            
+            locomotive.position.x = -25;
+            scene.add(locomotive);
+        }
+
+        function createTrainCars() {
+            for (let i = 0; i < 4; i++) {
+                const car = createMediaCar(i);
+                car.position.x = -15 + (i * 12);
+                cars.push(car);
+                scene.add(car);
+            }
+        }
+
+        function createMediaCar(index) {
+            const car = new THREE.Group();
+            const era = mediaEras[index];
+            
+            // Main car body
+            const bodyGeometry = new THREE.BoxGeometry(10, 6, 8);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: era.color,
+                transparent: true,
+                opacity: 0.8
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 3;
+            body.castShadow = true;
+            car.add(body);
+            
+            // Wheels
+            for (let j = 0; j < 2; j++) {
+                const wheelGeometry = new THREE.CylinderGeometry(1, 1, 0.5);
+                const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(j * 6 - 3, 0.5, 4.5);
+                car.add(wheel);
+                
+                const wheel2 = wheel.clone();
+                wheel2.position.z = -4.5;
+                car.add(wheel2);
+            }
+            
+            // Media-specific symbolic objects
+            createSymbolicContent(car, index);
+            
+            // Coupling mechanism - symbolic connection between eras
+            if (index < 3) {
+                const couplingGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2);
+                const couplingMaterial = new THREE.MeshPhongMaterial({ color: 0xffaa00 });
+                const coupling = new THREE.Mesh(couplingGeometry, couplingMaterial);
+                coupling.rotation.z = Math.PI / 2;
+                coupling.position.set(5.5, 2, 0);
+                car.add(coupling);
+            }
+            
+            return car;
+        }
+
+        function createSymbolicContent(car, index) {
+            const era = mediaEras[index];
+            
+            switch(index) {
+                case 0: // Print Media
+                    // Books/Pages
+                    for (let i = 0; i < 5; i++) {
+                        const pageGeometry = new THREE.BoxGeometry(2, 0.1, 3);
+                        const pageMaterial = new THREE.MeshPhongMaterial({ color: 0xffffee });
+                        const page = new THREE.Mesh(pageGeometry, pageMaterial);
+                        page.position.set(
+                            (Math.random() - 0.5) * 4,
+                            3.5 + i * 0.2,
+                            (Math.random() - 0.5) * 4
+                        );
+                        page.rotation.y = Math.random() * 0.5;
+                        car.add(page);
+                    }
+                    break;
+                    
+                case 1: // Radio
+                    // Antenna
+                    const antennaGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8);
+                    const antennaMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+                    const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
+                    antenna.position.set(0, 8, 0);
+                    car.add(antenna);
+                    
+                    // Radio waves (rings)
+                    for (let i = 0; i < 3; i++) {
+                        const ringGeometry = new THREE.RingGeometry(2 + i * 2, 2.5 + i * 2, 16);
+                        const ringMaterial = new THREE.MeshBasicMaterial({ 
+                            color: 0x4169E1,
+                            transparent: true,
+                            opacity: 0.3 - i * 0.1
+                        });
+                        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                        ring.position.y = 6;
+                        ring.rotation.x = Math.PI / 2;
+                        car.add(ring);
+                    }
+                    break;
+                    
+                case 2: // Television
+                    // TV Screen
+                    const screenGeometry = new THREE.BoxGeometry(4, 3, 0.5);
+                    const screenMaterial = new THREE.MeshPhongMaterial({ color: 0x111111 });
+                    const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+                    screen.position.set(0, 4, 3.5);
+                    car.add(screen);
+                    
+                    // Flickering light effect
+                    const screenLight = new THREE.PointLight(0x9370DB, 2, 10);
+                    screenLight.position.set(0, 4, 4);
+                    car.add(screenLight);
+                    break;
+                    
+                case 3: // Internet
+                    // Network nodes
+                    for (let i = 0; i < 8; i++) {
+                        const nodeGeometry = new THREE.SphereGeometry(0.3);
+                        const nodeMaterial = new THREE.MeshPhongMaterial({ 
+                            color: 0x00CED1,
+                            emissive: 0x002222
+                        });
+                        const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+                        node.position.set(
+                            (Math.random() - 0.5) * 6,
+                            3 + Math.random() * 4,
+                            (Math.random() - 0.5) * 6
+                        );
+                        car.add(node);
+                        
+                        // Connection lines
+                        if (i > 0) {
+                            const lineGeometry = new THREE.BufferGeometry();
+                            const positions = new Float32Array([
+                                0, 3, 0,
+                                node.position.x, node.position.y, node.position.z
+                            ]);
+                            lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                            const lineMaterial = new THREE.LineBasicMaterial({ 
+                                color: 0x00CED1,
+                                transparent: true,
+                                opacity: 0.6
+                            });
+                            const line = new THREE.Line(lineGeometry, lineMaterial);
+                            car.add(line);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        function addEventListeners() {
+            window.addEventListener('resize', onWindowResize);
+            
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onMouseWheel);
+            renderer.domElement.addEventListener('click', onMouseClick);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseDown(event) {
+            isMouseDown = true;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+            
+            const deltaX = event.clientX - mouseX;
+            const deltaY = event.clientY - mouseY;
+            
+            // Orbit camera around the train
+            const radius = Math.sqrt(camera.position.x ** 2 + camera.position.z ** 2);
+            const angle = Math.atan2(camera.position.z, camera.position.x) + deltaX * 0.01;
+            
+            camera.position.x = Math.cos(angle) * radius;
+            camera.position.z = Math.sin(angle) * radius;
+            camera.position.y += deltaY * 0.1;
+            
+            camera.lookAt(0, 0, 0);
+            
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+
+        function onMouseWheel(event) {
+            const scale = event.deltaY > 0 ? 1.1 : 0.9;
+            camera.position.multiplyScalar(scale);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function onMouseClick(event) {
+            if (isMouseDown) return; // Ignore clicks during drag
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check for intersections with train cars
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            
+            for (let intersect of intersects) {
+                // Find which car was clicked
+                let carIndex = -1;
+                for (let i = 0; i < cars.length; i++) {
+                    if (cars[i].children.includes(intersect.object) || 
+                        cars[i].children.some(child => child.children && child.children.includes(intersect.object))) {
+                        carIndex = i;
+                        break;
+                    }
+                }
+                
+                if (carIndex !== -1) {
+                    openDialogue(carIndex);
+                    break;
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.016 * speedMultiplier;
+            
+            // Animate locomotive forward motion
+            locomotive.position.z = Math.sin(time * 0.5) * 2;
+            cars.forEach((car, i) => {
+                car.position.z = Math.sin(time * 0.5 + i * 0.5) * 2;
+                
+                // Rotate wheels
+                car.children.forEach(child => {
+                    if (child.geometry && child.geometry.type === 'CylinderGeometry') {
+                        child.rotation.x += 0.1 * speedMultiplier;
+                    }
+                });
+            });
+            
+            // Animate symbolic elements
+            cars.forEach((car, index) => {
+                if (index === 1) { // Radio car - animate waves
+                    car.children.forEach(child => {
+                        if (child.geometry && child.geometry.type === 'RingGeometry') {
+                            child.scale.setScalar(1 + Math.sin(time * 2) * 0.2);
+                        }
+                    });
+                }
+                if (index === 2) { // TV car - flicker screen
+                    car.children.forEach(child => {
+                        if (child.type === 'PointLight') {
+                            child.intensity = 1 + Math.sin(time * 10) * 0.5;
+                        }
+                    });
+                }
+            });
+            
+            // Environment animation
+            environment.rotation.y += 0.001 * speedMultiplier;
+            
+            renderer.render(scene, camera);
+        }
+
+        // Dialogue system functions
+        function talkToCar() {
+            openDialogue(focusedCar);
+        }
+
+        function openDialogue(carIndex) {
+            currentDialogueEra = carIndex;
+            const era = mediaEras[carIndex];
+            
+            document.getElementById('dialogueTitle').textContent = `Conversing with ${era.name}`;
+            document.getElementById('dialogueContent').innerHTML = `
+                <div class="message era">
+                    <strong>${era.name}:</strong> ${era.personality.greeting}
+                </div>
+            `;
+            document.getElementById('dialogue').classList.add('active');
+            document.getElementById('userInput').focus();
+        }
+
+        function closeDialogue() {
+            document.getElementById('dialogue').classList.remove('active');
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to dialogue
+            const dialogueContent = document.getElementById('dialogueContent');
+            dialogueContent.innerHTML += `
+                <div class="message user">
+                    <strong>You:</strong> ${message}
+                </div>
+            `;
+            
+            // Generate era response
+            const response = generateEraResponse(currentDialogueEra, message);
+            const era = mediaEras[currentDialogueEra];
+            
+            setTimeout(() => {
+                dialogueContent.innerHTML += `
+                    <div class="message era">
+                        <strong>${era.name}:</strong> ${response}
+                    </div>
+                `;
+                dialogueContent.scrollTop = dialogueContent.scrollHeight;
+            }, 1000);
+            
+            input.value = '';
+            dialogueContent.scrollTop = dialogueContent.scrollHeight;
+        }
+
+        function generateEraResponse(eraIndex, userMessage) {
+            const era = mediaEras[eraIndex];
+            const responses = era.personality.responses;
+            const message = userMessage.toLowerCase();
+            
+            // Simple keyword matching for responses
+            if (message.includes('knowledge') || message.includes('information') || message.includes('learn')) {
+                return responses.knowledge;
+            } else if (message.includes('technology') || message.includes('technical') || message.includes('how')) {
+                return responses.technology;
+            } else if (message.includes('society') || message.includes('culture') || message.includes('people') || message.includes('social')) {
+                return responses.society;
+            } else if (message.includes('future') || message.includes('next') || message.includes('evolution') || message.includes('what comes')) {
+                return responses.future;
+            } else if (message.includes('change') || message.includes('transform') || message.includes('influence') || message.includes('impact')) {
+                return responses.change;
+            } else if (message.includes('memory') || message.includes('remember') || message.includes('history') || message.includes('past')) {
+                return responses.memory;
+            } else if (message.includes('hello') || message.includes('hi') || message.includes('greet')) {
+                return era.personality.greeting;
+            } else {
+                // Generate contextual responses based on era characteristics
+                const contextualResponses = [
+                    eraIndex === 0 ? "Consider this question through the lens of permanence and authority. What I offer is deliberate, considered, enduring. How does this perspective illuminate your inquiry?" :
+                    eraIndex === 1 ? "Listen carefully - can you hear the signal in the noise? I bring immediacy and intimacy to your question. Let me broadcast my thoughts directly to your understanding." :
+                    eraIndex === 2 ? "Picture this scenario unfolding before your eyes. I show rather than simply tell. Let me paint you a visual narrative that captures the essence of what you're asking." :
+                    "Your question connects to so many other questions, creating a web of possibility. Let me link you to multiple perspectives, multiple answers, multiple new questions to explore.",
+                    
+                    eraIndex === 0 ? "In my methodical way, I must ask: have you consulted the established authorities on this matter? Truth emerges through careful scholarship and peer review." :
+                    eraIndex === 1 ? "That's a fascinating question, friend! It reminds me of something I heard on the airwaves - there's a rhythm to understanding, a frequency you need to tune into." :
+                    eraIndex === 2 ? "What you're asking deserves the full treatment - imagine if we could show this story unfolding, with all its drama and complexity, right before your eyes." :
+                    "Interesting! Your question branches into multiple threads. Have you considered how it connects to these related concepts...? The network of meaning is vast and interconnected."
+                ];
+                
+                return contextualResponses[Math.floor(Math.random() * 2)];
+            }
+        }
+
+        // Control functions
+        function toggleView() {
+            currentView = (currentView + 1) % 3;
+            
+            switch(currentView) {
+                case 0: // Overview
+                    camera.position.set(30, 15, 30);
+                    break;
+                case 1: // Side view
+                    camera.position.set(0, 10, 40);
+                    break;
+                case 2: // Behind locomotive
+                    camera.position.set(-30, 8, 0);
+                    break;
+            }
+            camera.lookAt(0, 0, 0);
+        }
+
+        function changeSpeed() {
+            speedMultiplier = speedMultiplier === 1 ? 2 : speedMultiplier === 2 ? 0.5 : 1;
+        }
+
+        function focusOnCar() {
+            focusedCar = (focusedCar + 1) % 4;
+            const era = mediaEras[focusedCar];
+            
+            document.querySelector('.media-title').textContent = `Current Focus: ${era.name}`;
+            document.querySelector('.media-desc').textContent = era.description;
+            
+            // Move camera to focus on specific car
+            const carPosition = cars[focusedCar].position;
+            camera.position.set(carPosition.x + 15, 10, carPosition.z + 15);
+            camera.lookAt(carPosition.x, carPosition.y, carPosition.z);
+        }
+
+        // Initialize the experience
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Engineering - Wheel/Rail Interface</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #2c3e50;
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        #info-panel {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 300px;
+            pointer-events: auto;
+        }
+        #controls {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            width: 250px;
+            pointer-events: auto;
+        }
+        .control-group {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+        }
+        .control-group h3 {
+            margin: 5px 0;
+            color: #4a90e2;
+            font-size: 14px;
+        }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            align-items: center;
+        }
+        label {
+            font-size: 12px;
+            width: 120px;
+        }
+        input[type="range"] {
+            width: 100px;
+        }
+        .value-display {
+            width: 40px;
+            text-align: right;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #measurement-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui-container">
+        <div id="info-panel">
+            <h3>Railway Engineering</h3>
+            <div>Scale: 1 unit = 1 meter</div>
+            <div>Standard Gauge: 1.435m (4' 8.5")</div>
+            <div>Wheel Diameter: ~1m (typical)</div>
+        </div>
+        <div id="controls">
+            <div class="control-group">
+                <h3>Track Parameters</h3>
+                <div class="control-row">
+                    <label for="gauge">Gauge:</label>
+                    <input type="range" id="gauge" min="0.6" max="2.0" step="0.001" value="1.435">
+                    <span id="gaugeValue" class="value-display">1.435m</span>
+                </div>
+                <div class="control-row">
+                    <label for="cant">Cant (banking):</label>
+                    <input type="range" id="cant" min="-10" max="10" step="0.1" value="0">
+                    <span id="cantValue" class="value-display">0°</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Wheel Parameters</h3>
+                <div class="control-row">
+                    <label for="wheelDia">Diameter:</label>
+                    <input type="range" id="wheelDia" min="0.5" max="1.5" step="0.01" value="1.0">
+                    <span id="wheelDiaValue" class="value-display">1.0m</span>
+                </div>
+                <div class="control-row">
+                    <label for="flangeHeight">Flange Height:</label>
+                    <input type="range" id="flangeHeight" min="0.01" max="0.1" step="0.001" value="0.025">
+                    <span id="flangeHeightValue" class="value-display">25mm</span>
+                </div>
+                <div class="control-row">
+                    <label for="conicity">Taper (conicity):</label>
+                    <input type="range" id="conicity" min="0" max="0.2" step="0.001" value="0.05">
+                    <span id="conicityValue" class="value-display">0.05</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Simulation</h3>
+                <div style="display: flex; justify-content: space-between;">
+                    <button id="toggleSim">Pause</button>
+                    <button id="resetView">Reset View</button>
+                    <button id="topView">Top View</button>
+                    <button id="sideView">Side View</button>
+                </div>
+                <div class="control-row">
+                    <label for="speed">Speed:</label>
+                    <input type="range" id="speed" min="0" max="50" step="1" value="10">
+                    <span id="speedValue" class="value-display">10 m/s</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="measurement-panel">
+        <div>Mouse over components to see measurements</div>
+        <div id="measurement"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x2c3e50);
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 3, 5);
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.5, 0);
+        controls.update();
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+        
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(10, 10, 0x333333, 0x222222);
+        scene.add(gridHelper);
+        
+        // Axis helper
+        const axisHelper = new THREE.AxesHelper(2);
+        scene.add(axisHelper);
+        
+        // Track parameters (in meters)
+        const params = {
+            gauge: 1.435,      // Standard gauge: 4' 8.5"
+            cant: 0,           // Banking angle in degrees
+            wheelDiameter: 1.0, // Typical wheel diameter
+            flangeHeight: 0.025, // Flange height (25mm)
+            conicity: 0.05,     // Taper of wheel tread
+            speed: 10           // m/s
+        };
+        
+        // Create rail profile
+        function createRailProfile() {
+            const shape = new THREE.Shape();
+            const h = 0.15;  // Rail height
+            const w = 0.1;   // Head width
+            const b = 0.14;  // Base width
+            
+            shape.moveTo(-b/2, 0);
+            shape.lineTo(-w/2, 0);
+            shape.lineTo(-w/2, h);
+            shape.lineTo(w/2, h);
+            shape.lineTo(w/2, 0);
+            shape.lineTo(b/2, 0);
+            
+            // Add rail head rounding
+            shape.quadraticCurveTo(b/2 + 0.01, -0.01, b/2 - 0.01, -0.01);
+            shape.lineTo(-b/2 + 0.01, -0.01);
+            shape.quadraticCurveTo(-b/2, -0.01, -b/2, 0);
+            
+            return shape;
+        }
+        
+        // Create wheel profile
+        function createWheelProfile() {
+            const shape = new THREE.Shape();
+            const r = params.wheelDiameter / 2;  // Wheel radius
+            const fh = params.flangeHeight;     // Flange height
+            const con = params.conicity;        // Conicity (taper)
+            const w = 0.15;                      // Wheel width
+            
+            // Simplified wheel profile with flange
+            shape.moveTo(-w/2, r);
+            shape.lineTo(w/2, r);
+            shape.lineTo(w/2 - fh*2, r - fh);
+            shape.lineTo(w/2 - fh*2 - 0.01, r - fh - 0.01);
+            shape.lineTo(-w/2 + fh*2 + 0.01, r - fh - 0.01);
+            shape.lineTo(-w/2 + fh*2, r - fh);
+            shape.lineTo(-w/2, r);
+            
+            return shape;
+        }
+        
+        // Create track
+        function createTrack() {
+            const trackGroup = new THREE.Group();
+            
+            // Rail profile
+            const railShape = createRailProfile();
+            const railGeometry = new THREE.ExtrudeGeometry(railShape, {
+                steps: 1,
+                depth: 5,
+                bevelEnabled: false
+            });
+            railGeometry.rotateX(Math.PI / 2);
+            railGeometry.rotateY(Math.PI / 2);
+            
+            const railMaterial = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            
+            // Left rail
+            const leftRail = new THREE.Mesh(railGeometry, railMaterial);
+            leftRail.position.z = -params.gauge / 2;
+            leftRail.castShadow = true;
+            leftRail.receiveShadow = true;
+            trackGroup.add(leftRail);
+            
+            // Right rail
+            const rightRail = new THREE.Mesh(railGeometry, railMaterial);
+            rightRail.position.z = params.gauge / 2;
+            rightRail.castShadow = true;
+            rightRail.receiveShadow = true;
+            trackGroup.add(rightRail);
+            
+            // Sleepers/ties
+            const sleeperGeometry = new THREE.BoxGeometry(2.5, 0.15, 0.2);
+            const sleeperMaterial = new THREE.MeshStandardMaterial({
+                color: 0x5d4037,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            
+            for (let i = -4; i <= 4; i += 0.6) {
+                const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial);
+                sleeper.position.set(i, -0.075, 0);
+                sleeper.receiveShadow = true;
+                trackGroup.add(sleeper);
+            }
+            
+            // Apply cant (banking)
+            trackGroup.rotation.z = params.cant * Math.PI / 180;
+            
+            return trackGroup;
+        }
+        
+        // Create wheelset
+        function createWheelset() {
+            const wheelsetGroup = new THREE.Group();
+            
+            // Axle
+            const axleGeometry = new THREE.CylinderGeometry(0.05, 0.05, params.gauge * 1.2, 16);
+            const axleMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            const axle = new THREE.Mesh(axleGeometry, axleMaterial);
+            axle.rotation.z = Math.PI / 2;
+            wheelsetGroup.add(axle);
+            
+            // Wheel profile
+            const wheelShape = createWheelProfile();
+            const wheelGeometry = new THREE.LatheGeometry(wheelShape.getPoints(32), 32);
+            const wheelMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.7,
+                metalness: 0.3,
+                side: THREE.DoubleSide
+            });
+            
+            // Left wheel
+            const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            leftWheel.position.z = -params.gauge / 2;
+            leftWheel.rotation.y = Math.PI / 2;
+            leftWheel.castShadow = true;
+            wheelsetGroup.add(leftWheel);
+            
+            // Right wheel
+            const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            rightWheel.position.z = params.gauge / 2;
+            rightWheel.rotation.y = -Math.PI / 2;
+            rightWheel.castShadow = true;
+            wheelsetGroup.add(rightWheel);
+            
+            // Position wheelset slightly above rails
+            wheelsetGroup.position.y = params.wheelDiameter / 2;
+            
+            return { group: wheelsetGroup, leftWheel, rightWheel };
+        }
+        
+        // Create track and wheelset
+        let track, wheelset;
+        
+        function initScene() {
+            // Remove old objects if they exist
+            if (track) scene.remove(track);
+            if (wheelset) scene.remove(wheelset.group);
+            
+            // Create new track and wheelset with current parameters
+            track = createTrack();
+            wheelset = createWheelset();
+            
+            // Add to scene
+            scene.add(track);
+            scene.add(wheelset.group);
+            
+            // Update UI values
+            updateUI();
+        }
+        
+        // Update UI elements with current parameter values
+        function updateUI() {
+            document.getElementById('gaugeValue').textContent = params.gauge.toFixed(3) + 'm';
+            document.getElementById('cantValue').textContent = params.cant.toFixed(1) + '°';
+            document.getElementById('wheelDiaValue').textContent = params.wheelDiameter.toFixed(2) + 'm';
+            document.getElementById('flangeHeightValue').textContent = (params.flangeHeight * 1000).toFixed(0) + 'mm';
+            document.getElementById('conicityValue').textContent = params.conicity.toFixed(3);
+            document.getElementById('speedValue').textContent = params.speed + ' m/s';
+            
+            // Update sliders
+            document.getElementById('gauge').value = params.gauge;
+            document.getElementById('cant').value = params.cant;
+            document.getElementById('wheelDia').value = params.wheelDiameter;
+            document.getElementById('flangeHeight').value = params.flangeHeight;
+            document.getElementById('conicity').value = params.conicity;
+            document.getElementById('speed').value = params.speed;
+        }
+        
+        // Event listeners for UI controls
+        document.getElementById('gauge').addEventListener('input', (e) => {
+            params.gauge = parseFloat(e.target.value);
+            initScene();
+        });
+        
+        document.getElementById('cant').addEventListener('input', (e) => {
+            params.cant = parseFloat(e.target.value);
+            initScene();
+        });
+        
+        document.getElementById('wheelDia').addEventListener('input', (e) => {
+            params.wheelDiameter = parseFloat(e.target.value);
+            initScene();
+        });
+        
+        document.getElementById('flangeHeight').addEventListener('input', (e) => {
+            params.flangeHeight = parseFloat(e.target.value);
+            initScene();
+        });
+        
+        document.getElementById('conicity').addEventListener('input', (e) => {
+            params.conicity = parseFloat(e.target.value);
+            initScene();
+        });
+        
+        document.getElementById('speed').addEventListener('input', (e) => {
+            params.speed = parseFloat(e.target.value);
+            updateUI();
+        });
+        
+        document.getElementById('toggleSim').addEventListener('click', () => {
+            isSimulating = !isSimulating;
+            document.getElementById('toggleSim').textContent = isSimulating ? 'Pause' : 'Play';
+        });
+        
+        document.getElementById('resetView').addEventListener('click', () => {
+            camera.position.set(5, 3, 5);
+            controls.target.set(0, 0.5, 0);
+            controls.update();
+        });
+        
+        document.getElementById('topView').addEventListener('click', () => {
+            camera.position.set(0, 10, 0.1);
+            camera.lookAt(0, 0, 0);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        });
+        
+        document.getElementById('sideView').addEventListener('click', () => {
+            camera.position.set(10, 1, 0);
+            camera.lookAt(0, 1, 0);
+            controls.target.set(0, 1, 0);
+            controls.update();
+        });
+        
+        // Initialize scene
+        let isSimulating = true;
+        initScene();
+        
+        // Animation loop
+        let angle = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (isSimulating) {
+                // Rotate wheels based on speed
+                const rotationSpeed = (params.speed / (params.wheelDiameter * Math.PI)) * 0.1;
+                angle += rotationSpeed;
+                
+                if (wheelset) {
+                    wheelset.leftWheel.rotation.z = angle;
+                    wheelset.rightWheel.rotation.z = -angle; // Opposite rotation for opposite side
+                }
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

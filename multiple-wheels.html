@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Wheel Alignment Studio</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Manilla Office Theme & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            overflow: hidden;
+            color: #E9D7BE;
+        }
+        
+        canvas { 
+            display: block; 
+        }
+
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: #E9D7BE;
+            pointer-events: none;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            color: #E9D7BE;
+            font-size: 12px;
+            width: 320px;
+            max-height: 95vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            -webkit-user-select: none;
+            z-index: 100;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(233, 215, 190, 0.2);
+        }
+        
+        .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .control-group h3 {
+            margin: 0 0 8px 0;
+            color: #CCBBAA;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .wheel-controls {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+        
+        .wheel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(233, 215, 190, 0.2);
+        }
+        
+        .wheel-title {
+            font-weight: bold;
+            color: #E9D7BE;
+        }
+        
+        .wheel-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .control-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            gap: 5px;
+        }
+        
+        .control-item label {
+            flex: 0 0 20px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        
+        .control-item input[type="range"] {
+            flex-grow: 1;
+            height: 4px;
+            background: rgba(233, 215, 190, 0.3);
+            border-radius: 2px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        
+        .control-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E9D7BE;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        
+        .value-display {
+            font-size: 11px;
+            width: 40px;
+            text-align: right;
+            font-family: monospace;
+        }
+        
+        button {
+            background: #E9D7BE;
+            color: #2d2d2d;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        button:hover {
+            background: #f5e8d5;
+            transform: translateY(-1px);
+        }
+        
+        button.danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        button.primary {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none;
+        }
+        
+        select {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(233, 215, 190, 0.3);
+            color: #E9D7BE;
+            padding: 3px 5px;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 11px;
+            width: 60px;
+        }
+        
+        .global-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .view-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin: 10px 0;
+        }
+        
+        .track-controls {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .track-rail {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .track-rail .material-icons {
+            font-size: 16px;
+            margin-right: 5px;
+            color: #888;
+        }
+        
+        .grid-snap-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+        
+        .snap-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+        
+        .snap-value {
+            width: 50px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3px;
+            border-radius: 3px;
+        }
+        
+        .global-controls button {
+            flex: 1;
+            min-width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Train Wheel Alignment Studio</div>
+    <div id="controls">
+        <div class="control-group">
+            <h3>View Controls</h3>
+            <div class="view-controls">
+                <button id="topView" title="Top View"><i class="material-icons">vertical_align_top</i></button>
+                <button id="frontView" title="Front View"><i class="material-icons">vertical_align_center</i></button>
+                <button id="sideView" title="Side View"><i class="material-icons">horizontal_rule</i></button>
+                <button id="perspView" title="Perspective"><i class="material-icons">3d_rotation</i></button>
+                <button id="resetView" title="Reset View"><i class="material-icons">center_focus_strong</i></button>
+                <button id="toggleGrid" title="Toggle Grid"><i class="material-icons">grid_on</i></button>
+            </div>
+            
+            <h3>Track Settings</h3>
+            <div class="track-controls">
+                <div class="track-rail">
+                    <i class="material-icons">straighten</i>
+                    <span>Gauge: </span>
+                    <input type="range" id="trackGauge" min="0.1" max="2" step="0.01" value="1.435">
+                    <span class="value-display" id="gaugeValue">1.435m</span>
+                </div>
+                <div class="track-rail">
+                    <i class="material-icons">compare_arrows</i>
+                    <span>Cant: </span>
+                    <input type="range" id="trackCant" min="-10" max="10" step="0.5" value="0">
+                    <span class="value-display" id="cantValue">0°</span>
+                </div>
+                <div class="grid-snap-controls">
+                    <div class="snap-toggle">
+                        <input type="checkbox" id="snapToGrid" checked>
+                        <label for="snapToGrid">Snap to Grid</label>
+                    </div>
+                    <div class="snap-value">
+                        <span id="snapSize">0.1</span>m
+                    </div>
+                </div>
+            </div>
+            
+            <h3>Wheels <span id="wheelCount">(0)</span></h3>
+            <div id="wheelsContainer">
+                <!-- Wheel controls will be added here -->
+            </div>
+            <div class="global-controls">
+                <button id="addWheel" class="primary"><i class="material-icons" style="font-size: 14px;">add</i> Add Wheel</button>
+                <button id="exportBtn"><i class="material-icons" style="font-size: 14px;">save_alt</i> Export</button>
+                <button id="mirrorWheel" title="Mirror Selected"><i class="material-icons" style="font-size: 14px;">flip</i> Mirror</button>
+                <button id="deleteAll" class="danger"><i class="material-icons" style="font-size: 14px;">delete</i> Clear All</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // Default settings
+        const DEFAULTS = {
+            wheel: {
+                position: { x: 0, y: 0.35, z: 0 },
+                rotation_degrees: { x: 90, y: 0, z: 0 },
+                scale: { x: 0.5, y: 0.5, z: 0.5 },
+                rolling_properties: { axis: 'z', speed: 0.1 },
+                color: 0x333333,
+                visible: true
+            },
+            track: {
+                gauge: 1.435, // Standard gauge in meters (4' 8.5")
+                cant: 0, // Cant angle in degrees
+                snap: {
+                    enabled: true,
+                    size: 0.1 // meters
+                }
+            },
+            views: {
+                perspective: { position: new THREE.Vector3(5, 5, 5), target: new THREE.Vector3(0, 0, 0) },
+                top: { position: new THREE.Vector3(0, 10, 0.1), target: new THREE.Vector3(0, 0, 0) },
+                front: { position: new THREE.Vector3(0, 0, 10), target: new THREE.Vector3(0, 0, 0) },
+                side: { position: new THREE.Vector3(10, 0, 0.1), target: new THREE.Vector3(0, 0, 0) }
+            }
+        };
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.copy(DEFAULTS.views.perspective.position);
+        camera.lookAt(DEFAULTS.views.perspective.target);
+        
+        // Renderer with antialiasing
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        // Enhanced lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+        
+        // Main directional light (sun)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        sunLight.position.set(5, 10, 7);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 50;
+        sunLight.shadow.camera.left = -20;
+        sunLight.shadow.camera.right = 20;
+        sunLight.shadow.camera.top = 20;
+        sunLight.shadow.camera.bottom = -20;
+        scene.add(sunLight);
+        
+        // Fill light to reduce harsh shadows
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        fillLight.position.set(-5, 5, -7);
+        scene.add(fillLight);
+        
+        // Ground plane with grid
+        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        const groundMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x333333,
+            roughness: 0.8,
+            metalness: 0.2,
+            side: THREE.DoubleSide
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Enhanced grid helper with major/minor lines
+        const size = 20;
+        const divisions = 20;
+        const gridHelper = new THREE.GridHelper(size, divisions, 0x666666, 0x444444);
+        gridHelper.position.y = 0.01; // Slightly above ground to prevent z-fighting
+        scene.add(gridHelper);
+        
+        // Track visualization
+        const trackGroup = new THREE.Group();
+        scene.add(trackGroup);
+        
+        function updateTrackVisualization() {
+            // Clear existing track visualization
+            while(trackGroup.children.length > 0) { 
+                trackGroup.remove(trackGroup.children[0]); 
+            }
+            
+            const gauge = DEFAULTS.track.gauge;
+            const cantRad = DEFAULTS.track.cant * (Math.PI / 180);
+            
+            // Rails
+            const railGeometry = new THREE.BoxGeometry(0.1, 0.1, 10);
+            const railMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x444444,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            
+            // Left rail
+            const leftRail = new THREE.Mesh(railGeometry, railMaterial);
+            leftRail.position.x = -gauge / 2;
+            leftRail.position.y = 0.05;
+            leftRail.rotation.x = -cantRad;
+            leftRail.castShadow = true;
+            leftRail.receiveShadow = true;
+            trackGroup.add(leftRail);
+            
+            // Right rail
+            const rightRail = new THREE.Mesh(railGeometry, railMaterial);
+            rightRail.position.x = gauge / 2;
+            rightRail.position.y = 0.05;
+            rightRail.rotation.x = -cantRad;
+            rightRail.castShadow = true;
+            rightRail.receiveShadow = true;
+            trackGroup.add(rightRail);
+            
+            // Sleepers (railroad ties)
+            const sleeperGeometry = new THREE.BoxGeometry(gauge + 0.4, 0.1, 0.2);
+            const sleeperMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x5D4037,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            
+            for (let z = -5; z <= 5; z += 0.5) {
+                const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial);
+                sleeper.position.z = z;
+                sleeper.position.y = 0.05;
+                sleeper.rotation.x = -cantRad;
+                sleeper.castShadow = true;
+                sleeper.receiveShadow = true;
+                trackGroup.add(sleeper);
+            }
+            
+            // Update gauge display
+            document.getElementById('gaugeValue').textContent = `${gauge.toFixed(3)}m`;
+            document.getElementById('cantValue').textContent = `${DEFAULTS.track.cant.toFixed(1)}°`;
+        }
+        
+        // Initial track visualization
+        updateTrackVisualization();
+        
+        // Toggle grid visibility
+        function toggleGrid(visible) {
+            gridHelper.visible = visible;
+            document.getElementById('toggleGrid').innerHTML = 
+                `<i class="material-icons">${visible ? 'grid_off' : 'grid_on'}</i>`;
+        }
+        
+        // Snap value to grid if enabled
+        function snapToGrid(value) {
+            if (!DEFAULTS.track.snap.enabled) return value;
+            const gridSize = DEFAULTS.track.snap.size;
+            return Math.round(value / gridSize) * gridSize;
+        }
+        
+        // Track settings controls
+        document.getElementById('trackGauge').addEventListener('input', (e) => {
+            DEFAULTS.track.gauge = parseFloat(e.target.value);
+            updateTrackVisualization();
+        });
+        
+        document.getElementById('trackCant').addEventListener('input', (e) => {
+            DEFAULTS.track.cant = parseFloat(e.target.value);
+            updateTrackVisualization();
+        });
+        
+        document.getElementById('snapToGrid').addEventListener('change', (e) => {
+            DEFAULTS.track.snap.enabled = e.target.checked;
+        });
+        
+        // View controls
+        function setView(view) {
+            const { position, target } = DEFAULTS.views[view];
+            
+            // Animate camera
+            new TWEEN.Tween(camera.position)
+                .to(position, 500)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .start();
+                
+            new TWEEN.Tween(cameraTarget)
+                .to(target, 500)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onUpdate(() => {
+                    camera.lookAt(cameraTarget);
+                })
+                .start();
+        }
+        
+        // Camera target for smooth lookAt animation
+        const cameraTarget = new THREE.Vector3();
+        cameraTarget.copy(DEFAULTS.views.perspective.target);
+        
+        // View buttons
+        document.getElementById('topView').addEventListener('click', () => setView('top'));
+        document.getElementById('frontView').addEventListener('click', () => setView('front'));
+        document.getElementById('sideView').addEventListener('click', () => setView('side'));
+        document.getElementById('perspView').addEventListener('click', () => setView('perspective'));
+        document.getElementById('resetView').addEventListener('click', () => setView('perspective'));
+        document.getElementById('toggleGrid').addEventListener('click', () => toggleGrid(!gridHelper.visible));
+        
+        // Initial grid state
+        toggleGrid(true);
+        
+        // Add TWEEN.js for smooth animations
+        const TWEEN = (function() {
+            // Simple TWEEN.js implementation for basic animations
+            // Full implementation would be included via CDN in a real app
+            return {
+                Tween: class {
+                    constructor(object) { this.object = object; this.duration = 0; this.to = {}; this.easing = x => x; this.onUpdate = () => {}; }
+                    to(props, duration) { this.to = props; this.duration = duration; return this; }
+                    easing(fn) { this.easing = fn; return this; }
+                    onUpdate(fn) { this.onUpdate = fn; return this; }
+                    start() { 
+                        const startTime = Date.now();
+                        const startProps = {};
+                        Object.keys(this.to).forEach(key => startProps[key] = this.object[key]);
+                        
+                        const animate = () => {
+                            const now = Date.now();
+                            const t = Math.min(1, (now - startTime) / this.duration);
+                            const easedT = this.easing(t);
+                            
+                            Object.keys(this.to).forEach(key => {
+                                if (this.object[key] instanceof THREE.Vector3) {
+                                    this.object[key].lerpVectors(
+                                        startProps[key], 
+                                        this.to[key], 
+                                        easedT
+                                    );
+                                } else {
+                                    this.object[key] = startProps[key] + (this.to[key] - startProps[key]) * easedT;
+                                }
+                            });
+                            
+                            this.onUpdate();
+                            
+                            if (t < 1) {
+                                requestAnimationFrame(animate);
+                            }
+                        };
+                        
+                        animate();
+                    }
+                },
+                Easing: {
+                    Quadratic: {
+                        InOut: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+                    }
+                }
+            };
+        })();
+
+        // Store wheels data and meshes
+        let wheels = [];
+        let wheelCounter = 0;
+
+        // Create a wheel mesh
+        function createWheelMesh(wheelData, id) {
+            const geometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 32);
+            const material = new THREE.MeshStandardMaterial({
+                color: wheelData.color || 0x333333,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            
+            const wheel = new THREE.Mesh(geometry, material);
+            
+            // Apply transformations
+            updateWheelTransform(wheel, wheelData);
+            
+            // Add visual markings
+            addWheelMarkings(wheel, wheelData);
+            
+            // Add to scene
+            wheel.visible = wheelData.visible !== false;
+            scene.add(wheel);
+            
+            return { 
+                id, 
+                mesh: wheel, 
+                data: JSON.parse(JSON.stringify(wheelData)),
+                ui: null // Will store UI elements
+            };
+        }
+        
+        // Update wheel transform
+        function updateWheelTransform(wheel, data) {
+            // Position
+            wheel.position.set(
+                data.position.x,
+                data.position.y,
+                data.position.z
+            );
+            
+            // Rotation (convert degrees to radians)
+            wheel.rotation.set(
+                data.rotation_degrees.x * Math.PI / 180,
+                data.rotation_degrees.y * Math.PI / 180,
+                data.rotation_degrees.z * Math.PI / 180
+            );
+            
+            // Scale
+            wheel.scale.set(data.scale.x, data.scale.y, data.scale.z);
+        }
+        
+        // Add visual markings to wheel
+        function addWheelMarkings(wheel, wheelData) {
+            // Add a simple rim
+            const rimGeometry = new THREE.TorusGeometry(0.5, 0.02, 8, 32);
+            const rimMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x888888,
+                transparent: true,
+                opacity: 0.8
+            });
+            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+            rim.rotation.x = Math.PI / 2;
+            wheel.add(rim);
+            
+            // Add colored stripes
+            const stripeCount = 8;
+            const stripeMaterial = new THREE.MeshBasicMaterial({ 
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            for (let i = 0; i < stripeCount; i++) {
+                const angle = (i / stripeCount) * Math.PI * 2;
+                const points = [];
+                points.push(new THREE.Vector3(0, 0, 0));
+                points.push(new THREE.Vector3(
+                    Math.cos(angle) * 0.5,
+                    Math.sin(angle) * 0.5,
+                    0
+                ));
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ 
+                    color: i % 2 === 0 ? 0xff0000 : 0xffff00,
+                    transparent: true,
+                    opacity: 0.7
+                }));
+                wheel.add(line);
+            }
+        }
+        
+        // Add a new wheel
+        function addWheel(wheelData = null) {
+            const wheelId = wheelCounter++;
+            const data = wheelData ? JSON.parse(JSON.stringify(wheelData)) : JSON.parse(JSON.stringify(DEFAULT_WHEEL));
+            
+            // Create wheel mesh
+            const wheelObj = createWheelMesh(data, wheelId);
+            wheels.push(wheelObj);
+            
+            // Create UI controls for this wheel
+            createWheelControls(wheelObj);
+            
+            // Update wheel count
+            updateWheelCount();
+            
+            return wheelObj;
+        }
+        
+        // Create UI controls for a wheel
+        function createWheelControls(wheelObj) {
+            const container = document.createElement('div');
+            container.className = 'wheel-controls';
+            container.id = `wheel-${wheelObj.id}`;
+            
+            const header = document.createElement('div');
+            header.className = 'wheel-header';
+            
+            const title = document.createElement('div');
+            title.className = 'wheel-title';
+            title.textContent = `Wheel ${wheelObj.id + 1}`;
+            
+            const actions = document.createElement('div');
+            actions.className = 'wheel-actions';
+            
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = wheelObj.data.visible ? 'Hide' : 'Show';
+            toggleBtn.onclick = () => toggleWheelVisibility(wheelObj.id);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '×';
+            removeBtn.className = 'danger';
+            removeBtn.title = 'Remove wheel';
+            removeBtn.onclick = () => removeWheel(wheelObj.id);
+            
+            actions.appendChild(toggleBtn);
+            actions.appendChild(removeBtn);
+            
+            header.appendChild(title);
+            header.appendChild(actions);
+            
+            container.appendChild(header);
+            
+            // Store UI elements for later reference
+            wheelObj.ui = {
+                container,
+                toggleBtn,
+                controls: {}
+            };
+            
+            // Create transform controls
+            createVectorControl('Position', 'position', wheelObj, container);
+            createVectorControl('Rotation', 'rotation_degrees', wheelObj, container, '°');
+            createVectorControl('Scale', 'scale', wheelObj, container);
+            
+            // Rolling properties
+            const rollingDiv = document.createElement('div');
+            rollingDiv.className = 'control-item';
+            rollingDiv.innerHTML = `
+                <label>Roll:</label>
+                <select id="rollingAxis-${wheelObj.id}">
+                    <option value="x" ${wheelObj.data.rolling_properties.axis === 'x' ? 'selected' : ''}>X</option>
+                    <option value="y" ${wheelObj.data.rolling_properties.axis === 'y' ? 'selected' : ''}>Y</option>
+                    <option value="z" ${wheelObj.data.rolling_properties.axis === 'z' ? 'selected' : ''}>Z</option>
+                </select>
+                <input type="range" id="speed-${wheelObj.id}" min="0" max="0.5" step="0.01" 
+                       value="${wheelObj.data.rolling_properties.speed}">
+                <span class="value-display">${wheelObj.data.rolling_properties.speed.toFixed(2)}</span>
+            `;
+            
+            const axisSelect = rollingDiv.querySelector('select');
+            const speedInput = rollingDiv.querySelector('input[type="range"]');
+            const speedValue = rollingDiv.querySelector('.value-display');
+            
+            axisSelect.onchange = (e) => {
+                wheelObj.data.rolling_properties.axis = e.target.value;
+                updateWheelTransform(wheelObj.mesh, wheelObj.data);
+            };
+            
+            speedInput.oninput = (e) => {
+                const value = parseFloat(e.target.value);
+                wheelObj.data.rolling_properties.speed = value;
+                speedValue.textContent = value.toFixed(2);
+            };
+            
+            container.appendChild(rollingDiv);
+            
+            // Store references to controls
+            wheelObj.ui.controls.rollingAxis = axisSelect;
+            wheelObj.ui.controls.speed = speedInput;
+            
+            document.getElementById('wheelsContainer').appendChild(container);
+        }
+        
+        // Create a vector control (position, rotation, or scale)
+        function createVectorControl(label, prop, wheelObj, parent, unit = '') {
+            const div = document.createElement('div');
+            div.className = 'control-item';
+            div.innerHTML = `
+                <label>${label}:</label>
+                <span style="width: 10px;">X</span>
+                <input type="range" id="${prop}-x-${wheelObj.id}" min="${prop === 'scale' ? 0.1 : -5}" 
+                       max="${prop === 'scale' ? 3 : 5}" step="${prop === 'rotation_degrees' ? 1 : 0.1}" 
+                       value="${wheelObj.data[prop].x}">
+                <span class="value-display">${wheelObj.data[prop].x}${unit}</span>
+                
+                <span style="width: 10px;">Y</span>
+                <input type="range" id="${prop}-y-${wheelObj.id}" min="${prop === 'scale' ? 0.1 : -5}" 
+                       max="${prop === 'scale' ? 3 : 5}" step="${prop === 'rotation_degrees' ? 1 : 0.1}" 
+                       value="${wheelObj.data[prop].y}">
+                <span class="value-display">${wheelObj.data[prop].y}${unit}</span>
+                
+                <span style="width: 10px;">Z</span>
+                <input type="range" id="${prop}-z-${wheelObj.id}" min="${prop === 'scale' ? 0.1 : -5}" 
+                       max="${prop === 'scale' ? 3 : 5}" step="${prop === 'rotation_degrees' ? 1 : 0.1}" 
+                       value="${wheelObj.data[prop].z}">
+                <span class="value-display">${wheelObj.data[prop].z}${unit}</span>
+            `;
+            
+            // Set up event listeners for each axis
+            ['x', 'y', 'z'].forEach(axis => {
+                const input = div.querySelector(`#${prop}-${axis}-${wheelObj.id}`);
+                const valueSpan = div.querySelector(`#${prop}-${axis}-${wheelObj.id}`).nextElementSibling;
+                
+                input.oninput = (e) => {
+                    const value = parseFloat(e.target.value);
+                    wheelObj.data[prop][axis] = value;
+                    valueSpan.textContent = value + unit;
+                    updateWheelTransform(wheelObj.mesh, wheelObj.data);
+                };
+                
+                // Store reference to input
+                if (!wheelObj.ui.controls[prop]) wheelObj.ui.controls[prop] = {};
+                wheelObj.ui.controls[prop][axis] = input;
+            });
+            
+            parent.appendChild(div);
+        }
+        
+        // Toggle wheel visibility
+        function toggleWheelVisibility(wheelId) {
+            const wheelObj = wheels.find(w => w.id === wheelId);
+            if (wheelObj) {
+                wheelObj.data.visible = !wheelObj.data.visible;
+                wheelObj.mesh.visible = wheelObj.data.visible;
+                wheelObj.ui.toggleBtn.textContent = wheelObj.data.visible ? 'Hide' : 'Show';
+            }
+        }
+        
+        // Remove a wheel
+        function removeWheel(wheelId) {
+            const index = wheels.findIndex(w => w.id === wheelId);
+            if (index !== -1) {
+                // Remove from scene
+                scene.remove(wheels[index].mesh);
+                
+                // Remove UI
+                const element = document.getElementById(`wheel-${wheelId}`);
+                if (element) {
+                    element.remove();
+                }
+                
+                // Remove from array
+                wheels.splice(index, 1);
+                
+                // Update wheel count
+                updateWheelCount();
+            }
+        }
+        
+        // Update wheel count display
+        function updateWheelCount() {
+            document.getElementById('wheelCount').textContent = `(${wheels.length})`;
+        }
+        
+        // Export current wheel configurations
+        function exportConfig() {
+            const config = {
+                wheels: wheels.map(wheel => ({
+                    position: { ...wheel.data.position },
+                    rotation_degrees: { ...wheel.data.rotation_degrees },
+                    scale: { ...wheel.data.scale },
+                    rolling_properties: { ...wheel.data.rolling_properties },
+                    color: wheel.data.color,
+                    visible: wheel.data.visible
+                }))
+            };
+            
+            const dataStr = JSON.stringify(config, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportName = `wheel-config-${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportName);
+            linkElement.click();
+        }
+        
+        // Event listeners
+        document.getElementById('addWheel').addEventListener('click', () => {
+            // Position new wheels in a circle
+            const angle = (wheels.length / 4) * Math.PI * 2;
+            const radius = 2;
+            const newWheel = addWheel({
+                ...DEFAULT_WHEEL,
+                position: {
+                    x: Math.cos(angle) * radius,
+                    y: DEFAULT_WHEEL.position.y,
+                    z: Math.sin(angle) * radius
+                }
+            });
+        });
+        
+        document.getElementById('resetView').addEventListener('click', () => {
+            camera.position.set(5, 5, 5);
+            camera.lookAt(0, 0, 0);
+        });
+        
+        document.getElementById('exportBtn').addEventListener('click', exportConfig);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Add initial wheels (left and right)
+        const initialWheel1 = addWheel({
+            ...DEFAULTS.wheel,
+            position: { x: -DEFAULTS.track.gauge/2, y: 0.35, z: 0 }
+        });
+        
+        const initialWheel2 = addWheel({
+            ...DEFAULTS.wheel,
+            position: { x: DEFAULTS.track.gauge/2, y: 0.35, z: 0 }
+        });
+        
+        // Set initial view
+        setView('perspective');
+        
+        // Wheel mirroring functionality
+        document.getElementById('mirrorWheel').addEventListener('click', () => {
+            if (selectedWheel !== null) {
+                const wheel = wheels[selectedWheel];
+                const newWheel = addWheel({
+                    ...wheel.data,
+                    position: {
+                        x: -wheel.data.position.x,
+                        y: wheel.data.position.y,
+                        z: wheel.data.position.z
+                    },
+                    rotation_degrees: {
+                        x: wheel.data.rotation_degrees.x,
+                        y: -wheel.data.rotation_degrees.y,
+                        z: -wheel.data.rotation_degrees.z
+                    }
+                });
+                
+                // Select the new wheel
+                selectWheel(newWheel.id);
+            }
+        });
+        
+        // Delete all wheels
+        document.getElementById('deleteAll').addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete all wheels?')) {
+                while (wheels.length > 0) {
+                    removeWheel(wheels[0].id);
+                }
+            }
+        });
+        
+        // Wheel selection
+        let selectedWheel = null;
+        const selectWheel = (wheelId) => {
+            // Deselect previous
+            if (selectedWheel !== null) {
+                const prevWheel = wheels.find(w => w.id === selectedWheel);
+                if (prevWheel && prevWheel.ui) {
+                    prevWheel.ui.container.style.border = 'none';
+                }
+            }
+            
+            // Select new
+            selectedWheel = wheelId;
+            const wheel = wheels.find(w => w.id === wheelId);
+            if (wheel && wheel.ui) {
+                wheel.ui.container.style.border = '2px solid #4CAF50';
+                // Scroll to wheel in UI
+                wheel.ui.container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        };
+        
+        // Initialize wheel selection
+        if (wheels.length > 0) {
+            selectWheel(wheels[0].id);
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update TWEEN animations
+            TWEEN.update();
+            
+            // Update wheel rotations
+            wheels.forEach(wheel => {
+                if (!wheel.data.visible) return;
+                
+                const axis = wheel.data.rolling_properties.axis;
+                const speed = wheel.data.rolling_properties.speed;
+                
+                // Calculate rotation based on speed and wheel diameter
+                const circumference = Math.PI * wheel.data.scale.x * 2; // Assuming x scale is diameter
+                const distancePerFrame = speed * 0.1; // Adjust sensitivity
+                const rotationAmount = (distancePerFrame / circumference) * Math.PI * 2;
+                
+                // Apply rotation based on axis
+                switch(axis) {
+                    case 'x':
+                        wheel.mesh.rotateX(rotationAmount);
+                        break;
+                    case 'y':
+                        wheel.mesh.rotateY(rotationAmount);
+                        break;
+                    case 'z':
+                        wheel.mesh.rotateZ(rotationAmount);
+                        break;
+                }
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

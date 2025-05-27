@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iso-Memory Vault</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #F9F4E8;
+            font-family: 'Courier New', monospace;
+            color: #5A4A3C;
+        }
+
+        #canvas-container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(249, 244, 232, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        #compass {
+            width: 60px;
+            height: 60px;
+            background: #E9D7BE;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            margin-bottom: 15px;
+            border: 2px solid #D4C4A8;
+        }
+
+        #compass::before {
+            content: 'N';
+            position: absolute;
+            top: 5px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            color: #5A4A3C;
+        }
+
+        #timeline {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            height: 4px;
+            background: #D4C4A8;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        #timeline-handle {
+            position: absolute;
+            top: -8px;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background: #E9D7BE;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            border: 2px solid #5A4A3C;
+            cursor: grab;
+        }
+
+        #tooltip {
+            position: fixed;
+            padding: 8px 12px;
+            background: rgba(233, 215, 190, 0.9);
+            border: 1px solid #D4C4A8;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="ui">
+        <div id="compass" title="Rotate View"></div>
+    </div>
+    
+    <div id="timeline">
+        <div id="timeline-handle"></div>
+    </div>
+    
+    <div id="tooltip"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Main application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Scene setup
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xF9F4E8);
+            
+            // Camera setup
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(15, 15, 15);
+            
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.maxPolarAngle = Math.PI / 2;
+            controls.minDistance = 5;
+            controls.maxDistance = 50;
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(50, 50, 0x888888, 0x888888);
+            gridHelper.rotation.x = -Math.PI / 2;
+            scene.add(gridHelper);
+            
+            // Create materials
+            const creamMaterial = new THREE.MeshPhongMaterial({
+                color: 0xF9F4E8,
+                shininess: 30,
+                specular: 0x111111
+            });
+            
+            const edgeMaterial = new THREE.LineBasicMaterial({ 
+                color: 0xE9D7BE,
+                transparent: true,
+                opacity: 0.3
+            });
+            
+            // Cabinet parameters
+            const drawerCount = 5;
+            const drawerSize = { width: 4, height: 1.5, depth: 3 };
+            const drawerSpacing = 0.1;
+            const cabinet = new THREE.Group();
+            
+            // Create cabinet frame
+            const frameGeometry = new THREE.BoxGeometry(
+                drawerSize.width + 0.2,
+                (drawerSize.height + drawerSpacing) * drawerCount + 0.2,
+                drawerSize.depth + 0.2
+            );
+            
+            const frame = new THREE.Mesh(frameGeometry, creamMaterial);
+            frame.position.y = ((drawerSize.height + drawerSpacing) * drawerCount) / 2 - 0.1;
+            cabinet.add(frame);
+            
+            // Create drawers
+            const drawers = [];
+            for (let i = 0; i < drawerCount; i++) {
+                const drawer = new THREE.Group();
+                const yPos = i * (drawerSize.height + drawerSpacing);
+                
+                // Create hollow drawer
+                const drawerGroup = new THREE.Group();
+                const drawerThickness = 0.05;
+                
+                // Create drawer bottom
+                const bottomGeometry = new THREE.PlaneGeometry(
+                    drawerSize.width - drawerThickness * 2,
+                    drawerSize.depth - drawerThickness * 2
+                );
+                const bottom = new THREE.Mesh(bottomGeometry, creamMaterial);
+                bottom.rotation.x = -Math.PI / 2;
+                bottom.position.y = -drawerSize.height / 2 + drawerThickness / 2;
+                drawerGroup.add(bottom);
+                
+                // Create drawer sides
+                const sideMaterial = new THREE.MeshPhongMaterial({
+                    color: 0xE9D7BE,
+                    side: THREE.DoubleSide
+                });
+                
+                // Front side (will be removed for opening)
+                const frontGeometry = new THREE.PlaneGeometry(
+                    drawerSize.width - drawerThickness * 2,
+                    drawerSize.height - drawerThickness * 2
+                );
+                const front = new THREE.Mesh(frontGeometry, sideMaterial);
+                front.position.z = -drawerSize.depth / 2 + drawerThickness / 2;
+                front.rotation.y = Math.PI;
+                drawerGroup.add(front);
+                
+                // Back side
+                const back = front.clone();
+                back.position.z = drawerSize.depth / 2 - drawerThickness / 2;
+                back.rotation.y = 0;
+                drawerGroup.add(back);
+                
+                // Left side
+                const leftGeometry = new THREE.PlaneGeometry(
+                    drawerSize.depth - drawerThickness * 2,
+                    drawerSize.height - drawerThickness * 2
+                );
+                const left = new THREE.Mesh(leftGeometry, sideMaterial);
+                left.position.x = -drawerSize.width / 2 + drawerThickness / 2;
+                left.rotation.y = Math.PI / 2;
+                drawerGroup.add(left);
+                
+                // Right side
+                const right = left.clone();
+                right.position.x = drawerSize.width / 2 - drawerThickness / 2;
+                right.rotation.y = -Math.PI / 2;
+                drawerGroup.add(right);
+                
+                // Create outer frame for visual appeal
+                const frameGeometry = new THREE.BoxGeometry(
+                    drawerSize.width,
+                    drawerSize.height,
+                    drawerThickness
+                );
+                const frame = new THREE.Mesh(frameGeometry, creamMaterial);
+                frame.position.z = -drawerSize.depth / 2 + drawerThickness / 2;
+                drawerGroup.add(frame);
+                
+                // Position the drawer group
+                drawerGroup.position.y = yPos + drawerSize.height / 2;
+                drawerGroup.userData = { isDrawer: true, index: i };
+                
+                const mesh = drawerGroup;
+                
+                // Add edges to the drawer
+                const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(
+                    drawerSize.width,
+                    drawerSize.height,
+                    drawerSize.depth
+                ));
+                const line = new THREE.LineSegments(edges, edgeMaterial);
+                mesh.add(line);
+                
+                // Add handle to the front face
+                const handleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 16);
+                const handle = new THREE.Mesh(
+                    handleGeometry, 
+                    new THREE.MeshPhongMaterial({ color: 0x8B7D6B })
+                );
+                handle.position.set(0, 0, -drawerSize.depth / 2 + 0.01);
+                handle.rotation.x = Math.PI / 2;
+                mesh.add(handle);
+                
+                drawer.add(mesh);
+                drawer.position.y = yPos;
+                cabinet.add(drawer);
+                
+                // Add to drawers array
+                drawers.push({
+                    group: drawer,
+                    mesh: mesh,
+                    isOpen: false,
+                    targetZ: 0,
+                    artifacts: []
+                });
+            }
+            
+            scene.add(cabinet);
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // Handle compass click
+            document.getElementById('compass').addEventListener('click', () => {
+                const angle = Math.atan2(camera.position.z, camera.position.x);
+                const newAngle = Math.ceil(angle / (Math.PI / 2)) * (Math.PI / 2);
+                
+                gsap.to(camera.position, {
+                    x: 15 * Math.cos(newAngle),
+                    z: 15 * Math.sin(newAngle),
+                    duration: 1,
+                    onUpdate: () => {
+                        camera.lookAt(0, 5, 0);
+                    }
+                });
+            });
+            
+            // Timeline interaction
+            const timeline = document.getElementById('timeline');
+            const timelineHandle = document.getElementById('timeline-handle');
+            let isDragging = false;
+            
+            timeline.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                updateTimeline(e);
+            });
+            
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    updateTimeline(e);
+                }
+            });
+            
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            function updateTimeline(e) {
+                const rect = timeline.getBoundingClientRect();
+                let x = (e.clientX - rect.left) / rect.width;
+                x = Math.max(0, Math.min(1, x));
+                
+                timelineHandle.style.left = `${x * 100}%`;
+                
+                // Update drawer positions based on timeline
+                drawers.forEach((drawer, i) => {
+                    const threshold = i / drawers.length;
+                    if (x >= threshold) {
+                        drawer.group.visible = true;
+                    } else {
+                        drawer.group.visible = false;
+                    }
+                });
+            }
+            
+            // Raycaster for drawer interaction
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            function onMouseMove(event) {
+                // Calculate mouse position in normalized device coordinates
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                // Update the picking ray with the camera and mouse position
+                raycaster.setFromCamera(mouse, camera);
+                
+                // Calculate objects intersecting the picking ray
+                const intersects = raycaster.intersectObjects(
+                    drawers.map(d => d.mesh),
+                    true
+                );
+                
+                // Update cursor style
+                document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+                
+                // Update tooltip
+                const tooltip = document.getElementById('tooltip');
+                if (intersects.length > 0) {
+                    const drawer = drawers[intersects[0].object.parent.userData.index];
+                    tooltip.textContent = `Era ${drawer.mesh.userData.index + 1}`;
+                    tooltip.style.opacity = '1';
+                    tooltip.style.left = `${event.clientX + 10}px`;
+                    tooltip.style.top = `${event.clientY + 10}px`;
+                } else {
+                    tooltip.style.opacity = '0';
+                }
+            }
+            
+            function onMouseClick(event) {
+                // Calculate mouse position in normalized device coordinates
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                // Update the picking ray with the camera and mouse position
+                raycaster.setFromCamera(mouse, camera);
+                
+                // Calculate objects intersecting the picking ray
+                const intersects = raycaster.intersectObjects(
+                    drawers.map(d => d.mesh),
+                    true
+                );
+                
+                if (intersects.length > 0) {
+                    const drawer = drawers[intersects[0].object.parent.userData.index];
+                    toggleDrawer(drawer);
+                }
+            }
+            
+            function toggleDrawer(drawer) {
+                drawer.isOpen = !drawer.isOpen;
+                const targetZ = drawer.isOpen ? -drawerSize.depth * 1.2 : 0;
+                
+                // Animate drawer
+                gsap.to(drawer.group.position, {
+                    z: targetZ,
+                    duration: 0.8,
+                    ease: 'power2.inOut'
+                });
+                
+                // Create artifacts if opening
+                if (drawer.isOpen && drawer.artifacts.length === 0) {
+                    createArtifacts(drawer);
+                }
+            }
+            
+            function createArtifacts(drawer) {
+                const count = 3 + Math.floor(Math.random() * 4);
+                const yPos = drawer.group.position.y;
+                const zPos = drawer.group.position.z - drawerSize.depth / 2 - 1;
+                
+                // Clear any existing artifacts
+                drawer.artifacts.forEach(artifact => {
+                    scene.remove(artifact.mesh);
+                });
+                drawer.artifacts = [];
+                
+                for (let i = 0; i < count; i++) {
+                    // Random position in front of the drawer
+                    const x = (Math.random() - 0.5) * (drawerSize.width - 0.5);
+                    const y = yPos + (Math.random() - 0.5) * (drawerSize.height - 0.5);
+                    const z = zPos - Math.random() * 2;
+                    
+                    // Random artifact type
+                    let geometry;
+                    const type = Math.floor(Math.random() * 3);
+                    
+                    switch(type) {
+                        case 0:
+                            geometry = new THREE.BoxGeometry(
+                                0.3 + Math.random() * 0.7,
+                                0.1 + Math.random() * 0.3,
+                                0.3 + Math.random() * 0.7
+                            );
+                            break;
+                        case 1:
+                            geometry = new THREE.CylinderGeometry(
+                                0.2 + Math.random() * 0.3,
+                                0.2 + Math.random() * 0.3,
+                                0.1 + Math.random() * 0.5,
+                                6
+                            );
+                            break;
+                        case 2:
+                            geometry = new THREE.TetrahedronGeometry(0.3 + Math.random() * 0.5);
+                            break;
+                    }
+                    
+                    const material = new THREE.MeshPhongMaterial({
+                        color: 0xE9D7BE,
+                        transparent: true,
+                        opacity: 0.9,
+                        shininess: 50
+                    });
+                    
+                    const artifact = new THREE.Mesh(geometry, material);
+                    artifact.position.set(x, yPos, z);
+                    artifact.rotation.set(
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI
+                    );
+                    
+                    // Add to scene and drawer's artifacts array
+                    scene.add(artifact);
+                    drawer.artifacts.push({
+                        mesh: artifact,
+                        baseY: yPos,
+                        timeOffset: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Update drawer animations
+                drawers.forEach(drawer => {
+                    // Update artifacts
+                    drawer.artifacts.forEach(artifact => {
+                        // Gentle floating animation
+                        artifact.mesh.position.y = artifact.baseY + Math.sin(Date.now() * 0.001 + artifact.timeOffset) * 0.1;
+                        
+                        // Slow rotation
+                        artifact.mesh.rotation.y += 0.005;
+                    });
+                });
+                
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            
+            // Add event listeners
+            window.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('click', onMouseClick, false);
+            
+            // Start animation loop
+            animate();
+            
+            // Initial camera position
+            camera.lookAt(0, 5, 0);
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iso-Memory Vault</title>
+    <style>
+        /* General Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            overflow: hidden;
+            color: #E9D7BE;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            pointer-events: auto; /* Default for 3D interaction */
+        }
+        #container.modal-open, #container.file-open {
+            pointer-events: none; /* Disable 3D interaction when modal or file is open */
+        }
+
+        /* UI Overlay for 2D elements */
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through to elements within */
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Specific UI Elements */
+        .compass-rose {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: rgba(233, 215, 190, 0.1);
+            border: 2px solid #E9D7BE;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: all; /* Make it clickable */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .compass-rose:hover {
+            background: rgba(233, 215, 190, 0.2);
+            transform: scale(1.1);
+        }
+
+        .timeline-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(300px, 60%, 800px);
+            height: 60px;
+            background: rgba(233, 215, 190, 0.1);
+            border: 2px solid #E9D7BE;
+            border-radius: 30px;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .timeline-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(233, 215, 190, 0.3);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .timeline-thumb {
+            width: 20px;
+            height: 20px;
+            background: #E9D7BE;
+            border-radius: 50%;
+            position: absolute;
+            top: -8px;
+            left: 0%;
+            cursor: grab;
+            transition: transform 0.2s ease;
+        }
+
+        .timeline-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .timeline-thumb:active {
+            cursor: grabbing;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(233, 215, 190, 0.1);
+            border: 2px solid #E9D7BE;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 300px;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .info-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .info-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #E9D7BE;
+        }
+
+        .info-description {
+            font-size: 14px;
+            line-height: 1.4;
+            color: rgba(233, 215, 190, 0.8);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #E9D7BE;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .debug-panel {
+            position: absolute;
+            top: 120px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+            color: #E9D7BE;
+            pointer-events: all;
+            max-width: 200px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .debug-panel.visible {
+            opacity: 1;
+        }
+
+        .debug-item {
+            margin: 2px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 2D Drawer Modal Styles (for artifacts) */
+        #drawer-2d-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: clamp(300px, 80%, 700px);
+            max-height: 90vh;
+            background: rgba(233, 215, 190, 0.15);
+            border: 2px solid #E9D7BE;
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            pointer-events: all;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #drawer-2d-modal.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #drawer-2d-modal h3 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            margin-bottom: 15px;
+            color: #E9D7BE;
+            text-align: center;
+            border-bottom: 1px solid rgba(233, 215, 190, 0.3);
+            padding-bottom: 10px;
+        }
+
+        #drawer-2d-modal p.drawer-2d-desc {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            color: rgba(233, 215, 190, 0.9);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        #drawer-2d-artifacts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .artifact-2d-item {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(233, 215, 190, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s ease, background 0.2s ease;
+            cursor: help;
+        }
+
+        .artifact-2d-item:hover {
+            transform: translateY(-5px);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .artifact-2d-item .icon {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .artifact-2d-item .name {
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
+            font-weight: bold;
+            color: #E9D7BE;
+            margin-bottom: 5px;
+        }
+
+        .artifact-2d-item .description {
+            font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+            color: rgba(233, 215, 190, 0.7);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #drawer-2d-close {
+            display: block;
+            margin: 0 auto;
+            padding: 12px 25px;
+            background: #E9D7BE;
+            color: #2d2d2d;
+            border: none;
+            border-radius: 8px;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        #drawer-2d-close:hover {
+            background: #f5e8d5;
+            transform: translateY(-2px);
+        }
+
+        /* Document Navigation Controls */
+        #document-nav {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 101; /* Above timeline */
+            pointer-events: all;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(233, 215, 190, 0.1);
+            border: 2px solid #E9D7BE;
+            border-radius: 30px;
+            padding: 10px 25px;
+        }
+
+        #document-nav.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #document-nav button {
+            padding: 10px 20px;
+            background: #E9D7BE;
+            color: #2d2d2d;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        #document-nav button:hover {
+            background: #f5e8d5;
+            transform: translateY(-2px);
+        }
+        #document-nav button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            .compass-rose {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+                top: 20px;
+                right: 20px;
+            }
+
+            .timeline-container {
+                height: 50px;
+                padding: 0 15px;
+                bottom: 20px;
+            }
+
+            .timeline-thumb {
+                width: 18px;
+                height: 18px;
+                top: -7px;
+            }
+
+            .info-panel {
+                top: 20px;
+                left: 20px;
+                max-width: 250px;
+                padding: 15px;
+            }
+
+            .info-title {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .info-description {
+                font-size: 12px;
+            }
+
+            .debug-panel {
+                top: 90px;
+                right: 20px;
+                font-size: 10px;
+                padding: 8px;
+            }
+
+            #document-nav {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 15px;
+                bottom: 10px;
+            }
+            #document-nav button {
+                width: 100%;
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="loading">Loading Memory Vault...</div>
+        <div id="ui-overlay">
+            <div class="compass-rose" id="compass" title="Rotate View">
+                ⟲
+            </div>
+
+            <div class="timeline-container" id="timeline-container">
+                <div class="timeline-track" id="timeline">
+                    <div class="timeline-thumb" id="timeline-thumb"></div>
+                </div>
+            </div>
+
+            <div class="info-panel" id="info-panel">
+                <div class="info-title" id="info-title">Memory Fragment</div>
+                <div class="info-description" id="info-description">
+                    Click on drawers to explore archived memories and artifacts.
+                </div>
+            </div>
+
+            <div class="debug-panel" id="debug-panel">
+                <div class="debug-item">FPS: <span id="fps">0</span></div>
+                <div class="debug-item">Open Drawer: <span id="open-drawer">None</span></div>
+                <div class="debug-item">Visible Artifacts: <span id="visible-artifacts">0</span></div>
+                <div class="debug-item">Timeline: <span id="timeline-debug">0%</span></div>
+                <div class="debug-item">Camera Rot: <span id="camera-rot">0°</span></div>
+                <div class="debug-item">Mouse: <span id="mouse-pos">0, 0</span></div>
+            </div>
+
+            <!-- 2D Drawer Modal for Artifacts -->
+            <div id="drawer-2d-modal" class="drawer-2d-modal">
+                <h3 id="drawer-2d-title"></h3>
+                <p class="drawer-2d-desc" id="drawer-2d-description"></p>
+                <div id="drawer-2d-artifacts">
+                    <!-- Artifacts will be dynamically inserted here -->
+                </div>
+                <button id="drawer-2d-close">Close Drawer</button>
+            </div>
+
+            <!-- Document Navigation Controls -->
+            <div id="document-nav">
+                <button id="prev-doc">Previous Document</button>
+                <button id="next-doc">Next Document</button>
+                <button id="close-file">Close File</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        class IsoMemoryVault {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.drawers = []; // Stores the THREE.Group for each drawer
+                this.interactableDrawerMeshes = []; // Stores the main mesh of each drawer for raycasting
+                this.artifacts = []; // All 3D floating artifacts
+                this.fileFolders = []; // All 3D file folders
+
+                this.currentRotation = 0;
+                this.timelineValue = 0;
+                this.raycaster = new THREE.Raycaster();
+                this.pointer = new THREE.Vector2();
+                this.openDrawer = null; // The currently open 3D drawer group
+                this.activeFileFolder = null; // The currently 'opened' 3D file folder (camera zoomed into it)
+                this.currentDocumentIndex = 0; // Index of the document currently displayed
+
+                this.clock = new THREE.Clock();
+                this.frameCount = 0;
+                this.lastFPSUpdate = 0;
+                this.debugMode = false;
+                this.is2DDrawerOpen = false; // Is the 2D artifact modal visible?
+                this.isFileOpen = false; // Is a 3D file folder open (camera zoomed in)?
+
+                this.init();
+                this.createScene();
+                this.setupEventListeners();
+                this.animate();
+            }
+
+            init() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x1a1a1a);
+
+                const aspect = window.innerWidth / window.innerHeight;
+                const frustumSize = 10; // Keep isometric scale
+                this.camera = new THREE.OrthographicCamera(
+                    frustumSize * aspect / -2, frustumSize * aspect / 2,
+                    frustumSize / 2, frustumSize / -2,
+                    0.1, 1000
+                );
+                this.camera.position.set(10, 10, 10);
+                this.camera.lookAt(0, 0, 0);
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+                document.getElementById('container').appendChild(this.renderer.domElement);
+                document.querySelector('.loading').style.display = 'none';
+            }
+
+            createScene() {
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+                this.scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 10, 5);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                this.scene.add(directionalLight);
+
+                this.createGridFloor();
+                this.createFilingCabinet();
+                this.createSampleArtifactsAndFiles(); // Combined creation
+            }
+
+            createGridFloor() {
+                const gridSize = 20;
+                const gridHelper = new THREE.GridHelper(gridSize, gridSize, 0x444444, 0x222222);
+                gridHelper.position.y = -0.1;
+                this.scene.add(gridHelper);
+
+                const floorGeometry = new THREE.PlaneGeometry(gridSize, gridSize);
+                const floorMaterial = new THREE.MeshLambertMaterial({
+                    color: 0x2a2a2a,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.y = -0.15;
+                floor.receiveShadow = true;
+                this.scene.add(floor);
+            }
+
+            createFilingCabinet() {
+                const cabinetGroup = new THREE.Group();
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#F5F1E8';
+                ctx.fillRect(0, 0, 512, 512);
+
+                for (let i = 0; i < 1000; i++) {
+                    const x = Math.random() * 512;
+                    const y = Math.random() * 512;
+                    const alpha = Math.random() * 0.3;
+                    ctx.fillStyle = `rgba(200, 190, 170, ${alpha})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+
+                const drawerMaterial = new THREE.MeshLambertMaterial({
+                    map: texture,
+                    color: 0xE9D7BE
+                });
+                const edgeMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xE9D7BE,
+                    transparent: true,
+                    opacity: 0.8
+                });
+
+                const drawerData = [
+                    { title: "Project Alpha", desc: "Early experimental work with generative algorithms" },
+                    { title: "Digital Sketches", desc: "Collection of procedural art studies" },
+                    { title: "Code Fragments", desc: "Archived development experiments" },
+                    { title: "Visual Studies", desc: "Exploration of form and structure" },
+                    { title: "Interactive Demos", desc: "Prototype user interfaces and experiences" },
+                    { title: "Data Visualizations", desc: "Information design and representation" },
+                    { title: "Concept Art", desc: "Ideation and creative development" },
+                    { title: "Technical Notes", desc: "Documentation and process insights" },
+                    { title: "Archive Misc", desc: "Miscellaneous creative artifacts" },
+                    { title: "Future Projects", desc: "Planned explorations and concepts" },
+                    { title: "Collaborations", desc: "Joint creative endeavors" },
+                    { title: "Research", desc: "Theoretical and practical investigations" }
+                ];
+
+                for (let row = 0; row < 4; row++) {
+                    for (let col = 0; col < 3; col++) {
+                        const index = row * 3 + col;
+                        const drawerGroup = this.createDrawer(drawerMaterial, edgeMaterial);
+                        drawerGroup.position.set(
+                            (col - 1) * 2.5,
+                            (3 - row) * 1.2,
+                            0
+                        );
+                        drawerGroup.userData = {
+                            originalPosition: drawerGroup.position.clone(),
+                            isOpen: false,
+                            index: index,
+                            data: drawerData[index] || { title: `Drawer ${index + 1}`, desc: "Empty drawer" },
+                            artifacts: [], // Will be populated in createSampleArtifactsAndFiles
+                            files: [] // Will be populated in createSampleArtifactsAndFiles
+                        };
+
+                        cabinetGroup.add(drawerGroup);
+                        this.drawers.push(drawerGroup);
+                        this.interactableDrawerMeshes.push(drawerGroup.getObjectByName('drawerBody'));
+                    }
+                }
+                this.scene.add(cabinetGroup);
+            }
+
+            createDrawer(material, edgeMaterial) {
+                const drawerGroup = new THREE.Group();
+
+                const drawerGeometry = new THREE.BoxGeometry(2, 1, 3);
+                const drawerMesh = new THREE.Mesh(drawerGeometry, material);
+                drawerMesh.castShadow = true;
+                drawerMesh.receiveShadow = true;
+                drawerMesh.name = "drawerBody"; // Name for raycasting target
+                drawerMesh.userData.drawerGroup = drawerGroup; // Link back to the group
+
+                const interiorGeometry = new THREE.BoxGeometry(1.8, 0.8, 2.8);
+                const interiorMaterial = new THREE.MeshLambertMaterial({
+                    color: 0x1a1a1a,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const interior = new THREE.Mesh(interiorGeometry, interiorMaterial);
+                interior.position.z = -0.1;
+                interior.name = "drawerInterior";
+
+                const edges = new THREE.EdgesGeometry(drawerGeometry);
+                const edgeLines = new THREE.LineSegments(edges, edgeMaterial);
+                edgeLines.name = "drawerEdges";
+
+                const handleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.3);
+                const handleMaterial = new THREE.MeshLambertMaterial({ color: 0xCCBBAA });
+                const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+                handle.rotation.z = Math.PI / 2;
+                handle.position.set(0, 0, 1.6);
+                handle.name = "drawerHandle";
+
+                const dividerMaterial = new THREE.MeshLambertMaterial({
+                    color: 0xE0D0B0,
+                    transparent: true,
+                    opacity: 0.6
+                });
+
+                for (let i = 0; i < 2; i++) {
+                    const dividerGeometry = new THREE.PlaneGeometry(1.6, 0.6);
+                    const divider = new THREE.Mesh(dividerGeometry, dividerMaterial);
+                    divider.position.set((i - 0.5) * 0.6, 0, -0.5);
+                    divider.rotation.y = Math.PI / 2;
+                    divider.name = `drawerDivider${i}`;
+                    drawerGroup.add(divider);
+                }
+
+                drawerGroup.add(drawerMesh);
+                drawerGroup.add(interior);
+                drawerGroup.add(edgeLines);
+                drawerGroup.add(handle);
+
+                return drawerGroup;
+            }
+
+            createSampleArtifactsAndFiles() {
+                // Data for 2D artifact view
+                const artifactNameOptions = ["Quantum Loop", "Echo Chamber", "Data Stream", "Memory Crystal", "Glitch Sphere", "Void Fragment", "Temporal Knot", "Aether Shard", "Chronosphere", "Lumin Flux"];
+                const artifactIconOptions = ["🌀", "🔊", "📊", "💎", "👾", "⚫", "⏳", "✨", "🕰️", "💡"];
+                const artifactDescOptions = [
+                    "A fragment of pure thought, resonating with past echoes.",
+                    "Contains archived data, compressed beyond recognition.",
+                    "A relic from a forgotten timeline, unstable yet compelling.",
+                    "Exhibits unusual energy patterns, indicative of complex processes.",
+                    "A raw manifestation of a concept, unrefined but potent.",
+                    "Holds a key to an understanding previously lost to time.",
+                    "Its structure suggests complex self-organizing principles.",
+                    "A phantom trace of a completed cycle, shimmering with potential.",
+                    "Reflects abstract logic, cold but perfectly formed.",
+                    "Whispers of an untold story, waiting to be deciphered."
+                ];
+
+                // Data for file folders
+                const fileNameOptions = ["Research Notes", "Design Blueprints", "Legacy Codebase", "Project Memos", "Concept Sketches", "Financial Records", "User Feedback", "System Logs", "Historical Data"];
+                const fileDescOptions = [
+                    "Detailed notes from various research initiatives.",
+                    "Architectural plans and design specifications.",
+                    "Archived source code, mostly in esoteric languages.",
+                    "Internal communications and meeting summaries.",
+                    "Early visual ideas and ideation documents.",
+                    "Financial projections and expenditure reports.",
+                    "Direct feedback from user testing sessions.",
+                    "Automated system event logs.",
+                    "Collections of past events and critical milestones."
+                ];
+
+                this.drawers.forEach((drawer, drawerIndex) => {
+                    // Create 3-5 artifacts per drawer
+                    const artifactCount = 2 + Math.floor(Math.random() * 2); // Reduced for less clutter
+                    for (let i = 0; i < artifactCount; i++) {
+                        const type = ['cube', 'sphere', 'pyramid', 'cylinder'][Math.floor(Math.random() * 4)];
+                        const artifact = this.createArtifact(type);
+                        artifact.scale.setScalar(0.15 + Math.random() * 0.2); // Initial base scale
+                        artifact.visible = false;
+                        artifact.userData = {
+                            type: type,
+                            floatOffset: Math.random() * Math.PI * 2,
+                            emergenceDelay: i * 150,
+                            drawerIndex: drawerIndex,
+                            originalScale: artifact.scale.x,
+                            isEmerging: false,
+                            emergenceProgress: 0,
+                            targetPosition: new THREE.Vector3(),
+                            startPosition: new THREE.Vector3(),
+                            artifactData2D: {
+                                name: artifactNameOptions[Math.floor(Math.random() * artifactNameOptions.length)],
+                                icon: artifactIconOptions[Math.floor(Math.random() * artifactIconOptions.length)],
+                                description: artifactDescOptions[Math.floor(Math.random() * artifactDescOptions.length)]
+                            },
+                            onEmergenceComplete: null // Callback for promise resolution
+                        };
+                        drawer.userData.artifacts.push(artifact);
+                        this.artifacts.push(artifact);
+                        this.scene.add(artifact);
+                    }
+
+                    // Create 2-4 file folders per drawer
+                    const fileCount = 2 + Math.floor(Math.random() * 2);
+                    for (let i = 0; i < fileCount; i++) {
+                        const fileFolder = this.createFileFolder();
+                        fileFolder.scale.setScalar(0.01); // Start small, hidden
+                        fileFolder.visible = false;
+                        fileFolder.userData = {
+                            originalPosition: new THREE.Vector3(), // Will be set relative to drawer
+                            targetPosition: new THREE.Vector3(), // Floating target
+                            isEmerging: false,
+                            emergenceProgress: 0,
+                            emergenceDelay: (artifactCount + i) * 150, // After artifacts
+                            originalScale: 0.8, // File folder default scale
+                            data: {
+                                title: fileNameOptions[Math.floor(Math.random() * fileNameOptions.length)],
+                                desc: fileDescOptions[Math.floor(Math.random() * fileDescOptions.length)]
+                            },
+                            documents: [], // Array of 3D documents inside
+                            onEmergenceComplete: null
+                        };
+
+                        // Create documents for this file folder
+                        const docCount = 2 + Math.floor(Math.random() * 3); // 2-4 documents per file
+                        for (let j = 0; j < docCount; j++) {
+                            const docData = {
+                                title: `Document ${j + 1} - ${fileFolder.userData.data.title}`,
+                                content: `This is the content for Document ${j + 1} in the file "${fileFolder.userData.data.title}". It contains details about a specific topic related to this file. This could be a report, a memo, or a log entry. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`,
+                                image: null // Placeholder for potential images
+                            };
+                            if (j % 2 === 0 && Math.random() > 0.5) { // Occasionally add a placeholder image
+                                docData.image = 'https://picsum.photos/400/300?random=' + (drawerIndex + i + j);
+                            }
+                            const documentMesh = this.createDocument(docData);
+                            documentMesh.visible = false; // Hidden until file is opened
+                            documentMesh.userData = {
+                                isEmerging: false,
+                                emergenceProgress: 0,
+                                emergenceDelay: j * 100, // Stagger document emergence
+                                originalScale: documentMesh.scale.x,
+                                data: docData
+                            };
+                            fileFolder.userData.documents.push(documentMesh);
+                            this.scene.add(documentMesh); // Add documents to scene, but manage visibility via fileFolder
+                        }
+
+                        drawer.userData.files.push(fileFolder);
+                        this.fileFolders.push(fileFolder);
+                        this.scene.add(fileFolder);
+                    }
+                });
+                console.log(`Created ${this.artifacts.length} artifacts and ${this.fileFolders.length} file folders across ${this.drawers.length} drawers`);
+            }
+
+            createArtifact(type) {
+                let geometry;
+                switch (type) {
+                    case 'cube': geometry = new THREE.BoxGeometry(1, 1, 1); break;
+                    case 'sphere': geometry = new THREE.SphereGeometry(0.5, 8, 6); break;
+                    case 'pyramid': geometry = new THREE.ConeGeometry(0.5, 1, 4); break;
+                    case 'cylinder': geometry = new THREE.CylinderGeometry(0.3, 0.3, 1, 8); break;
+                    default: geometry = new THREE.BoxGeometry(1, 1, 1);
+                }
+
+                const hue = Math.random();
+                const material = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color().setHSL(hue, 0.6, 0.7),
+                    transparent: true,
+                    opacity: 0.85,
+                    emissive: new THREE.Color().setHSL(hue, 0.3, 0.1)
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+
+                const wireframe = new THREE.WireframeGeometry(geometry);
+                const wireframeMaterial = new THREE.LineBasicMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.1
+                });
+                const wireframeMesh = new THREE.LineSegments(wireframe, wireframeMaterial);
+
+                const group = new THREE.Group();
+                group.add(mesh);
+                group.add(wireframeMesh);
+                group.userData.mainMesh = mesh; // Store reference to the main mesh for opacity control
+                return group;
+            }
+
+            createFileFolder() {
+                const folderGroup = new THREE.Group();
+
+                // Folder 'body' (a thin box)
+                const folderGeometry = new THREE.BoxGeometry(1.5, 1.2, 0.2); // Width, Height, Depth
+                const folderMaterial = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color().setHSL(Math.random(), 0.5, 0.6), // Random color
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const folderMesh = new THREE.Mesh(folderGeometry, folderMaterial);
+                folderMesh.name = "fileFolderBody"; // Name for raycasting
+                folderMesh.castShadow = true;
+                folderMesh.receiveShadow = true;
+                folderMesh.userData.fileFolderGroup = folderGroup; // Link back to the group
+
+                // Tab on top
+                const tabGeometry = new THREE.BoxGeometry(0.5, 0.15, 0.05);
+                const tabMaterial = new THREE.MeshLambertMaterial({ color: 0xF0F0F0 });
+                const tabMesh = new THREE.Mesh(tabGeometry, tabMaterial);
+                tabMesh.position.set(0.4, 0.675, 0); // Position on top right
+                tabMesh.name = "fileFolderTab";
+
+                folderGroup.add(folderMesh);
+                folderGroup.add(tabMesh);
+                folderGroup.userData.mainMesh = folderMesh; // For opacity control
+                return folderGroup;
+            }
+
+            createDocument(data) {
+                // Create a canvas texture for the document content
+                const canvas = document.createElement('canvas');
+                canvas.width = 600; // Aspect ratio for a typical document
+                canvas.height = 800;
+                const ctx = canvas.getContext('2d');
+
+                // White background for the document
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Add text content
+                ctx.font = '30px "Courier New", monospace';
+                ctx.fillStyle = '#333333';
+                ctx.textAlign = 'left';
+                const wrapText = (context, text, x, y, maxWidth, lineHeight) => {
+                    const words = text.split(' ');
+                    let line = '';
+                    for (let n = 0; n < words.length; n++) {
+                        const testLine = line + words[n] + ' ';
+                        const metrics = context.measureText(testLine);
+                        const testWidth = metrics.width;
+                        if (testWidth > maxWidth && n > 0) {
+                            context.fillText(line, x, y);
+                            line = words[n] + ' ';
+                            y += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    context.fillText(line, x, y);
+                };
+
+                ctx.font = '40px "Courier New", monospace';
+                ctx.fontWeight = 'bold';
+                ctx.fillText(data.title, 50, 80);
+                ctx.font = '28px "Courier New", monospace';
+                wrapText(ctx, data.content, 50, 150, canvas.width - 100, 35);
+
+                // Add image if provided
+                if (data.image) {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.drawImage(img, 50, 450, 500, 300); // Draw image below text
+                        documentTexture.needsUpdate = true; // Update texture after image loads
+                    };
+                    img.src = data.image;
+                }
+
+                const documentTexture = new THREE.CanvasTexture(canvas);
+                const documentMaterial = new THREE.MeshLambertMaterial({
+                    map: documentTexture,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0
+                });
+
+                const documentGeometry = new THREE.PlaneGeometry(1.5, 2); // Size matching content
+                const documentMesh = new THREE.Mesh(documentGeometry, documentMaterial);
+                documentMesh.name = "document";
+                documentMesh.userData.mainMesh = documentMesh; // For opacity control
+                documentMesh.userData.data = data; // Store data for display
+                documentMesh.castShadow = true;
+                return documentMesh;
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => {
+                    const aspect = window.innerWidth / window.innerHeight;
+                    const frustumSize = this.camera.top * 2; // Maintain current frustum size
+                    this.camera.left = frustumSize * aspect / -2;
+                    this.camera.right = frustumSize * aspect / 2;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                // Mouse/Touch events for 3D interaction
+                this.renderer.domElement.addEventListener('click', (event) => {
+                    if (this.is2DDrawerOpen) return;
+                    this.onPointerClick(this.getPointerCoordinates(event));
+                });
+                this.renderer.domElement.addEventListener('mousemove', (event) => {
+                    if (this.is2DDrawerOpen) return;
+                    this.onPointerMove(this.getPointerCoordinates(event));
+                });
+                this.renderer.domElement.addEventListener('touchstart', (event) => {
+                    if (this.is2DDrawerOpen || event.touches.length > 1) return;
+                    this.onPointerClick(this.getPointerCoordinates(event.touches[0]));
+                }, { passive: true });
+                this.renderer.domElement.addEventListener('touchmove', (event) => {
+                    if (this.is2DDrawerOpen || event.touches.length > 1) return;
+                    this.onPointerMove(this.getPointerCoordinates(event.touches[0]));
+                }, { passive: true });
+
+                // Compass rose
+                document.getElementById('compass').addEventListener('click', () => {
+                    if (!this.isFileOpen) { // Only rotate if not in file view
+                        this.rotateView();
+                    }
+                });
+
+                // Timeline
+                this.setupTimelineInteraction();
+
+                // Debug mode toggle
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'd' || event.key === 'D') {
+                        this.debugMode = !this.debugMode;
+                        const debugPanel = document.getElementById('debug-panel');
+                        debugPanel.classList.toggle('visible', this.debugMode);
+                        console.log('Debug mode', this.debugMode ? 'enabled' : 'disabled');
+                    }
+                });
+
+                // 2D Drawer Close Button
+                document.getElementById('drawer-2d-close').addEventListener('click', () => {
+                    this.hide2DDrawer();
+                });
+
+                // Document Navigation Buttons
+                document.getElementById('prev-doc').addEventListener('click', () => this.showPreviousDocument());
+                document.getElementById('next-doc').addEventListener('click', () => this.showNextDocument());
+                document.getElementById('close-file').addEventListener('click', () => this.closeFileFolder());
+            }
+
+            getPointerCoordinates(event) {
+                const clientX = event.clientX !== undefined ? event.clientX : event.touches[0].clientX;
+                const clientY = event.clientY !== undefined ? event.clientY : event.touches[0].clientY;
+                const x = (clientX / window.innerWidth) * 2 - 1;
+                const y = -(clientY / window.innerHeight) * 2 + 1;
+                return { x, y };
+            }
+
+            setupTimelineInteraction() {
+                const timeline = document.getElementById('timeline');
+                const thumb = document.getElementById('timeline-thumb');
+                let isDragging = false;
+
+                const updateTimeline = (clientX) => {
+                    const rect = timeline.getBoundingClientRect();
+                    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                    const percentage = x / rect.width;
+
+                    thumb.style.left = `${percentage * 100}%`;
+                    this.timelineValue = percentage;
+                    this.updateTimelineEffects();
+                };
+
+                const startDrag = (event) => {
+                    if (this.isFileOpen) return; // Prevent timeline interaction when file is open
+                    isDragging = true;
+                    event.preventDefault();
+                    const clientX = event.clientX || event.touches[0].clientX;
+                    updateTimeline(clientX);
+                };
+
+                const duringDrag = (event) => {
+                    if (isDragging) {
+                        const clientX = event.clientX || event.touches[0].clientX;
+                        updateTimeline(clientX);
+                    }
+                };
+
+                const endDrag = () => {
+                    isDragging = false;
+                };
+
+                timeline.addEventListener('mousedown', startDrag);
+                document.addEventListener('mousemove', duringDrag);
+                document.addEventListener('mouseup', endDrag);
+
+                timeline.addEventListener('touchstart', startDrag, { passive: false });
+                document.addEventListener('touchmove', duringDrag, { passive: false });
+                document.addEventListener('touchend', endDrag);
+            }
+
+            updateTimelineEffects() {
+                const layerCount = 4;
+                const currentLayer = Math.floor(this.timelineValue * layerCount);
+
+                this.drawers.forEach((drawer, index) => {
+                    const drawerRow = Math.floor(index / 3);
+                    const shouldBeVisible = drawerRow <= currentLayer || this.timelineValue > 0.95;
+
+                    // Only affect visibility if drawer isn't currently open or being interacted with
+                    if (!drawer.userData.isOpen && !this.isFileOpen) {
+                        drawer.visible = shouldBeVisible;
+                        drawer.children.forEach(child => {
+                            if (child.material) {
+                                child.material.transparent = true;
+                                child.material.opacity = Math.min(1, 0.3 + this.timelineValue * 0.7);
+                            }
+                        });
+                    }
+                });
+                // Hide timeline if file is open
+                document.getElementById('timeline-container').style.opacity = this.isFileOpen ? '0' : '1';
+                document.getElementById('timeline-container').style.pointerEvents = this.isFileOpen ? 'none' : 'all';
+            }
+
+
+            onPointerClick(coords) {
+                // If a 2D modal is open, prevent 3D clicks
+                if (this.is2DDrawerOpen) return;
+
+                this.pointer.x = coords.x;
+                this.pointer.y = coords.y;
+
+                this.raycaster.setFromCamera(this.pointer, this.camera);
+
+                let clickedObject = null;
+                let clickedDrawer = null;
+                let clickedFileFolder = null;
+
+                if (this.isFileOpen && this.activeFileFolder) {
+                    // If a file is open, only check for documents inside
+                    const intersects = this.raycaster.intersectObjects(this.activeFileFolder.userData.documents, false);
+                    if (intersects.length > 0) {
+                        console.log("Clicked on document: ", intersects[0].object.userData.data.title);
+                        // Implement document interaction here if needed (e.g., zoom into document, flip content)
+                    }
+                } else if (this.openDrawer) {
+                    // If a drawer is open, check for file folders first
+                    const intersects = this.raycaster.intersectObjects(this.openDrawer.userData.files.map(f => f.getObjectByName('fileFolderBody')), false);
+                    if (intersects.length > 0) {
+                        clickedObject = intersects[0].object;
+                        clickedFileFolder = clickedObject.userData.fileFolderGroup;
+                        console.log("Clicked file folder:", clickedFileFolder.userData.data.title);
+                        this.openFileFolder(clickedFileFolder);
+                    } else {
+                        // If no file folder was clicked, check for artifacts
+                        const artifactIntersects = this.raycaster.intersectObjects(this.openDrawer.userData.artifacts.map(a => a.userData.mainMesh), false);
+                        if (artifactIntersects.length > 0) {
+                            console.log("Clicked artifact: ", artifactIntersects[0].object.parent.userData.artifactData2D.name);
+                            // This would be where you might pop up a 2D info panel for the artifact
+                        }
+                    }
+                } else {
+                    // No drawer open, check for drawer clicks
+                    const intersects = this.raycaster.intersectObjects(this.interactableDrawerMeshes, false);
+                    if (intersects.length > 0) {
+                        clickedObject = intersects[0].object;
+                        clickedDrawer = clickedObject.userData.drawerGroup;
+                        console.log("Clicked drawer:", clickedDrawer.userData.data.title);
+                        this.toggleDrawer(clickedDrawer);
+                    }
+                }
+            }
+
+            onPointerMove(coords) {
+                this.pointer.x = coords.x;
+                this.pointer.y = coords.y;
+                document.getElementById('mouse-pos').textContent = `${this.pointer.x.toFixed(2)}, ${this.pointer.y.toFixed(2)}`;
+
+                if (this.is2DDrawerOpen || this.isFileOpen) {
+                    document.body.style.cursor = 'default';
+                    return;
+                }
+
+                this.raycaster.setFromCamera(this.pointer, this.camera);
+                let hoveredObject = null;
+                let hoverType = 'default'; // 'default', 'drawer', 'file', 'artifact'
+
+                if (this.openDrawer) {
+                    // Check for file folders first
+                    const fileIntersects = this.raycaster.intersectObjects(this.openDrawer.userData.files.map(f => f.getObjectByName('fileFolderBody')), false);
+                    if (fileIntersects.length > 0) {
+                        hoveredObject = fileIntersects[0].object.userData.fileFolderGroup;
+                        hoverType = 'file';
+                        this.showInfo(hoveredObject.userData.data);
+                    } else {
+                        // Then check for artifacts
+                        const artifactIntersects = this.raycaster.intersectObjects(this.openDrawer.userData.artifacts.map(a => a.userData.mainMesh), false);
+                        if (artifactIntersects.length > 0) {
+                            hoveredObject = artifactIntersects[0].object.parent;
+                            hoverType = 'artifact';
+                            this.showInfo(hoveredObject.userData.artifactData2D); // Show 2D info for artifact
+                        } else {
+                            this.hideInfo();
+                        }
+                    }
+                } else {
+                    // Check for drawers
+                    const drawerIntersects = this.raycaster.intersectObjects(this.interactableDrawerMeshes, false);
+                    if (drawerIntersects.length > 0) {
+                        hoveredObject = drawerIntersects[0].object.userData.drawerGroup;
+                        hoverType = 'drawer';
+                        this.showInfo(hoveredObject.userData.data);
+                    } else {
+                        this.hideInfo();
+                    }
+                }
+
+                document.body.style.cursor = (hoverType !== 'default') ? 'pointer' : 'default';
+            }
+
+
+            toggleDrawer(drawer) {
+                if (this.openDrawer && this.openDrawer !== drawer) {
+                    // Close existing drawer and any active file/modal
+                    this.closeFileFolder().then(() => { // Ensure file is closed first
+                        this.hide2DDrawer().then(() => { // Ensure 2D modal is hidden
+                            this.closeDrawer(this.openDrawer).then(() => { // Then close the old 3D drawer
+                                this.openDrawerAnimation(drawer); // Then open new drawer
+                            });
+                        });
+                    });
+                } else if (drawer.userData.isOpen) {
+                    // If clicking the currently open drawer, close it and any active file/modal
+                    this.closeFileFolder().then(() => {
+                        this.hide2DDrawer().then(() => {
+                            this.closeDrawer(drawer);
+                        });
+                    });
+                } else {
+                    // Open a new drawer
+                    this.openDrawerAnimation(drawer);
+                }
+            }
+
+            openDrawerAnimation(drawer) {
+                console.log(`Opening drawer ${drawer.userData.index}: ${drawer.userData.data.title}`);
+                drawer.userData.isOpen = true;
+                this.openDrawer = drawer;
+                this.hideInfo(); // Hide info panel immediately on click
+                document.getElementById('container').classList.remove('modal-open'); // Ensure 3D interaction is active
+
+                const targetPosition = drawer.userData.originalPosition.clone();
+                targetPosition.z += 2.5; // Slide out further for visibility
+
+                // Stage 1: Slide drawer out
+                return this.animatePosition(drawer, targetPosition, 800).then(() => {
+                    // Stage 2: Artifacts and File Folders emerge in 3D
+                    const allEmergencePromises = [];
+
+                    // Artifacts emergence
+                    drawer.userData.artifacts.forEach(artifact => {
+                        const emergencePromise = new Promise(resolve => {
+                            setTimeout(() => {
+                                artifact.visible = true;
+                                artifact.userData.isEmerging = true;
+                                artifact.userData.emergenceProgress = 0;
+
+                                const drawerPos = drawer.position.clone();
+                                artifact.userData.startPosition.copy(drawerPos);
+                                artifact.userData.startPosition.z -= 1; // Start behind drawer face
+
+                                const angle = (Math.random() * Math.PI * 2);
+                                const radius = 1 + Math.random() * 0.5;
+                                artifact.userData.targetPosition.set(
+                                    drawerPos.x + Math.cos(angle) * radius,
+                                    drawerPos.y + 1.5 + Math.random() * 0.5,
+                                    drawerPos.z + Math.sin(angle) * radius + 1
+                                );
+                                artifact.position.copy(artifact.userData.startPosition);
+                                artifact.scale.setScalar(0.01);
+                                artifact.userData.mainMesh.material.opacity = 0.05;
+                                artifact.userData.onEmergenceComplete = resolve;
+                            }, artifact.userData.emergenceDelay);
+                        });
+                        allEmergencePromises.push(emergencePromise);
+                    });
+
+                    // File folders emergence
+                    drawer.userData.files.forEach(fileFolder => {
+                        const emergencePromise = new Promise(resolve => {
+                            setTimeout(() => {
+                                fileFolder.visible = true;
+                                fileFolder.userData.isEmerging = true;
+                                fileFolder.userData.emergenceProgress = 0;
+
+                                const drawerPos = drawer.position.clone();
+                                fileFolder.userData.originalPosition.copy(drawerPos); // Set original for files
+                                fileFolder.userData.originalPosition.z += 1.2; // Inside drawer
+
+                                // Position file folders spread out next to the drawer
+                                const fileIndex = drawer.userData.files.indexOf(fileFolder);
+                                const totalFiles = drawer.userData.files.length;
+                                const offset = (fileIndex - (totalFiles - 1) / 2) * 0.8; // Space them out
+                                fileFolder.userData.targetPosition.set(
+                                    drawerPos.x + offset,
+                                    drawerPos.y + 0.5, // Slightly above drawer bottom
+                                    drawerPos.z + 3.5 // Further out
+                                );
+                                fileFolder.position.copy(fileFolder.userData.originalPosition);
+                                fileFolder.scale.setScalar(0.01); // Start small
+                                fileFolder.userData.mainMesh.material.opacity = 0.05; // Start nearly transparent
+                                fileFolder.userData.onEmergenceComplete = resolve;
+                            }, fileFolder.userData.emergenceDelay);
+                        });
+                        allEmergencePromises.push(emergencePromise);
+                    });
+
+                    return Promise.all(allEmergencePromises).then(() => {
+                        console.log("All artifacts and files emerged in 3D.");
+                        // At this point, the drawer is open, and artifacts/files are floating.
+                        // The user can now click on a file folder or interact with 3D artifacts.
+                    });
+                });
+            }
+
+            closeDrawer(drawer) {
+                console.log(`Closing drawer ${drawer.userData.index}`);
+                drawer.userData.isOpen = false;
+                this.openDrawer = null;
+
+                const allReturnPromises = [];
+
+                // Artifacts return to drawer and disappear
+                drawer.userData.artifacts.forEach(artifact => {
+                    allReturnPromises.push(new Promise(resolve => {
+                        const drawerInteriorTarget = drawer.userData.originalPosition.clone();
+                        drawerInteriorTarget.z -= 0.5 + (Math.random() - 0.5) * 0.5; // Slightly varied positions inside
+                        drawerInteriorTarget.y += (Math.random() - 0.5) * 0.3;
+                        this.animateArtifactTransition(artifact, 400, 'in', drawerInteriorTarget).then(() => {
+                            artifact.visible = false;
+                            artifact.userData.emergenceProgress = 0;
+                            resolve();
+                        });
+                    }));
+                });
+
+                // File folders return to drawer and disappear
+                drawer.userData.files.forEach(fileFolder => {
+                    allReturnPromises.push(new Promise(resolve => {
+                        const drawerInteriorTarget = fileFolder.userData.originalPosition.clone(); // Use folder's original internal position
+                        this.animateArtifactTransition(fileFolder, 400, 'in', drawerInteriorTarget).then(() => {
+                            fileFolder.visible = false;
+                            fileFolder.userData.emergenceProgress = 0;
+                            resolve();
+                        });
+                    }));
+                });
+
+                return Promise.all(allReturnPromises).then(() => {
+                    console.log("All artifacts and files returned.");
+                    // Stage 3: Drawer slides back in
+                    return this.animatePosition(drawer, drawer.userData.originalPosition, 600);
+                });
+            }
+
+            // NEW: Open a specific file folder (zoom in)
+            openFileFolder(fileFolder) {
+                if (this.isFileOpen) return; // Prevent opening another file while one is open
+                console.log(`Opening file folder: ${fileFolder.userData.data.title}`);
+                this.isFileOpen = true;
+                this.activeFileFolder = fileFolder;
+                this.hideInfo();
+                document.getElementById('container').classList.add('file-open'); // Disable 3D interaction
+
+                // Hide other file folders in the current drawer
+                this.openDrawer.userData.files.forEach(f => {
+                    if (f !== fileFolder) {
+                        this.animateArtifactTransition(f, 300, 'out');
+                    }
+                });
+
+                // Hide artifacts in the current drawer
+                this.openDrawer.userData.artifacts.forEach(a => {
+                    this.animateArtifactTransition(a, 300, 'out');
+                });
+
+                // Animate camera to zoom into the file folder
+                const targetCameraPosition = fileFolder.position.clone();
+                targetCameraPosition.x += 0;
+                targetCameraPosition.y += 0.8;
+                targetCameraPosition.z += 2; // Position directly in front of the folder
+
+                // Adjust frustum size to simulate zoom
+                const targetFrustumSize = 3; // Closer zoom
+                this.animateCamera(targetCameraPosition, 1000, targetFrustumSize).then(() => {
+                    // Stage 2: Documents emerge inside the file
+                    this.currentDocumentIndex = 0;
+                    this.displayCurrentDocument(); // Show the first document
+                });
+            }
+
+            // NEW: Close the active file folder (zoom out)
+            closeFileFolder() {
+                if (!this.isFileOpen) return Promise.resolve(); // If no file is open, nothing to close
+
+                console.log(`Closing file folder: ${this.activeFileFolder.userData.data.title}`);
+                this.isFileOpen = false;
+                document.getElementById('container').classList.remove('file-open');
+
+                // Hide documents
+                this.activeFileFolder.userData.documents.forEach(doc => {
+                    this.animateArtifactTransition(doc, 300, 'out', doc.userData.originalPosition); // Fade out to original (hidden) position
+                });
+                document.getElementById('document-nav').classList.remove('visible'); // Hide document nav
+
+                const originalCameraPosition = new THREE.Vector3(10, 10, 10); // Standard camera position
+                const originalFrustumSize = 10; // Standard frustum size
+
+                return this.animateCamera(originalCameraPosition, 1000, originalFrustumSize).then(() => {
+                    // Restore original camera lookAt (from 0,0,0)
+                    this.camera.lookAt(0, 0, 0);
+
+                    // Restore visibility of other file folders and artifacts
+                    this.openDrawer.userData.files.forEach(f => {
+                        if (f !== this.activeFileFolder) {
+                            this.animateArtifactTransition(f, 300, 'in');
+                        }
+                    });
+                    this.openDrawer.userData.artifacts.forEach(a => {
+                        this.animateArtifactTransition(a, 300, 'in');
+                    });
+                    this.activeFileFolder = null; // Clear active file
+                });
+            }
+
+            // NEW: Display the current document
+            displayCurrentDocument() {
+                if (!this.activeFileFolder || !this.activeFileFolder.userData.documents.length) return;
+
+                const documents = this.activeFileFolder.userData.documents;
+                const docCount = documents.length;
+                this.currentDocumentIndex = Math.max(0, Math.min(this.currentDocumentIndex, docCount - 1));
+
+                documents.forEach((doc, index) => {
+                    if (index === this.currentDocumentIndex) {
+                        doc.visible = true;
+                        doc.userData.isEmerging = true;
+                        doc.userData.emergenceProgress = 0;
+                        doc.position.set(this.activeFileFolder.position.x, this.activeFileFolder.position.y + 0.8, this.activeFileFolder.position.z + 0.1);
+                        doc.scale.setScalar(0.01); // Start small
+                        doc.userData.mainMesh.material.opacity = 0.05; // Start transparent
+
+                        // Animate document to main display position
+                        const targetDocPos = new THREE.Vector3(
+                            this.activeFileFolder.position.x,
+                            this.activeFileFolder.position.y + 0.8,
+                            this.activeFileFolder.position.z + 0.1
+                        );
+                        doc.userData.startPosition.copy(doc.position); // Set start position for current animation
+                        doc.userData.targetPosition.copy(targetDocPos); // Set target position for current animation
+
+                        // Callback to transition from emergence to normal state (not strictly needed here, but good practice)
+                        doc.userData.onEmergenceComplete = () => {
+                            doc.userData.isEmerging = false;
+                        };
+                    } else {
+                        // Hide other documents
+                        doc.visible = false;
+                    }
+                });
+
+                document.getElementById('document-nav').classList.add('visible');
+                document.getElementById('prev-doc').disabled = (this.currentDocumentIndex === 0);
+                document.getElementById('next-doc').disabled = (this.currentDocumentIndex === docCount - 1);
+            }
+
+            // NEW: Navigate documents
+            showNextDocument() {
+                if (this.activeFileFolder && this.currentDocumentIndex < this.activeFileFolder.userData.documents.length - 1) {
+                    this.animateDocumentFlip(this.activeFileFolder.userData.documents[this.currentDocumentIndex], 'out-right').then(() => {
+                        this.currentDocumentIndex++;
+                        this.displayCurrentDocument();
+                    });
+                }
+            }
+
+            showPreviousDocument() {
+                if (this.activeFileFolder && this.currentDocumentIndex > 0) {
+                    this.animateDocumentFlip(this.activeFileFolder.userData.documents[this.currentDocumentIndex], 'out-left').then(() => {
+                        this.currentDocumentIndex--;
+                        this.displayCurrentDocument();
+                    });
+                }
+            }
+
+            // NEW: Document flip animation (simple version for now)
+            animateDocumentFlip(documentMesh, direction) {
+                const startRotationY = documentMesh.rotation.y;
+                const targetRotationY = startRotationY + (direction === 'out-left' ? Math.PI / 4 : -Math.PI / 4);
+                const startPositionZ = documentMesh.position.z;
+                const targetPositionZ = startPositionZ + 0.5; // Move slightly forward during flip
+                const duration = 300;
+                const startTime = Date.now();
+
+                return new Promise(resolve => {
+                    const animate = () => {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const eased = this.easeOutCubic(progress);
+
+                        documentMesh.rotation.y = startRotationY + (targetRotationY - startRotationY) * eased;
+                        documentMesh.position.z = startPositionZ + (targetPositionZ - startPositionZ) * eased;
+                        documentMesh.userData.mainMesh.material.opacity = 1 - eased; // Fade out as it flips
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            documentMesh.visible = false; // Hide after animation
+                            documentMesh.rotation.y = startRotationY; // Reset rotation for next use
+                            documentMesh.position.z = startPositionZ; // Reset position
+                            documentMesh.userData.mainMesh.material.opacity = 1; // Reset opacity
+                            resolve();
+                        }
+                    };
+                    animate();
+                });
+            }
+
+
+            // Generic position animation
+            animatePosition(object, targetPosition, duration) {
+                const startPosition = object.position.clone();
+                const startTime = Date.now();
+                return new Promise(resolve => {
+                    const animate = () => {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const eased = this.easeOutCubic(progress);
+
+                        object.position.lerpVectors(startPosition, targetPosition, eased);
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            object.position.copy(targetPosition); // Ensure it ends exactly at target
+                            resolve();
+                        }
+                    };
+                    animate();
+                });
+            }
+
+            // Artifact/File Folder fade/scale/position transition (for 3D <-> 2D view change)
+            animateArtifactTransition(object, duration, direction, targetPos = null) {
+                const mainMesh = object.userData.mainMesh;
+                if (!mainMesh || !mainMesh.material) return Promise.resolve();
+
+                const startOpacity = mainMesh.material.opacity;
+                // If fading out, target a very low opacity, otherwise original.
+                // For files, original scale is 0.85 (target 0.8), for artifacts it's their original value.
+                const endOpacity = direction === 'out' ? 0.0 : (object.userData.originalScale * 0.85);
+
+                const startScale = object.scale.x;
+                const endScale = direction === 'out' ? 0.01 : object.userData.originalScale; // Shrink to tiny or expand to original
+
+                const startTime = Date.now();
+                const initialObjectPos = object.position.clone();
+
+                return new Promise(resolve => {
+                    const animate = () => {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const eased = direction === 'out' ? this.easeInCubic(progress) : this.easeOutCubic(progress);
+
+                        // Opacity
+                        mainMesh.material.opacity = startOpacity + (endOpacity - startOpacity) * eased;
+                        mainMesh.material.transparent = true;
+
+                        // Scale
+                        object.scale.setScalar(startScale + (endScale - startScale) * eased);
+
+                        // Position (only if targetPos is provided, for returning artifacts)
+                        if (targetPos) {
+                            object.position.lerpVectors(initialObjectPos, targetPos, eased);
+                        }
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            mainMesh.material.opacity = endOpacity;
+                            object.scale.setScalar(endScale);
+                            if (targetPos) {
+                                object.position.copy(targetPos);
+                            }
+                            if (endOpacity === 0.0 && direction === 'out') {
+                                object.visible = false; // Completely hide if fully faded out
+                            }
+                            resolve();
+                        }
+                    };
+                    animate();
+                });
+            }
+
+            easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+
+            easeInCubic(t) {
+                return t * t * t;
+            }
+
+            updateDebugInfo() {
+                if (!this.debugMode) return;
+
+                const now = performance.now();
+                this.frameCount++;
+
+                if (now - this.lastFPSUpdate > 1000) {
+                    const fps = Math.round((this.frameCount * 1000) / (now - this.lastFPSUpdate));
+                    document.getElementById('fps').textContent = fps;
+                    this.frameCount = 0;
+                    this.lastFPSUpdate = now;
+                }
+
+                document.getElementById('open-drawer').textContent =
+                    this.openDrawer ? `#${this.openDrawer.userData.index}` : 'None';
+
+                const visibleArtifacts = this.artifacts.filter(a => a.visible).length;
+                document.getElementById('visible-artifacts').textContent = visibleArtifacts;
+
+                document.getElementById('timeline-debug').textContent =
+                    Math.round(this.timelineValue * 100) + '%';
+
+                document.getElementById('camera-rot').textContent =
+                    Math.round((this.currentRotation * 180 / Math.PI) % 360) + '°';
+
+                document.getElementById('mouse-pos').textContent =
+                    `${this.pointer.x.toFixed(2)}, ${this.pointer.y.toFixed(2)}`;
+            }
+
+            rotateView() {
+                this.currentRotation += Math.PI / 2;
+                const radius = 14.14;
+                const x = Math.cos(this.currentRotation) * radius;
+                const z = Math.sin(this.currentRotation) * radius;
+
+                this.animateCamera({ x: x, y: 10, z: z }, 1000, 10); // Rotate back to standard view
+            }
+
+            animateCamera(targetPosition, duration, targetFrustumSize = this.camera.top * 2) {
+                const startPosition = this.camera.position.clone();
+                const startFrustumSize = this.camera.top * 2;
+                const startTime = Date.now();
+
+                return new Promise(resolve => {
+                    const animate = () => {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const eased = this.easeOutCubic(progress);
+
+                        this.camera.position.lerpVectors(startPosition, new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z), eased);
+
+                        // Animate frustum size (zoom)
+                        const currentFrustumSize = startFrustumSize + (targetFrustumSize - startFrustumSize) * eased;
+                        const aspect = window.innerWidth / window.innerHeight;
+                        this.camera.left = currentFrustumSize * aspect / -2;
+                        this.camera.right = currentFrustumSize * aspect / 2;
+                        this.camera.top = currentFrustumSize / 2;
+                        this.camera.bottom = currentFrustumSize / -2;
+                        this.camera.updateProjectionMatrix();
+
+                        // Always look at the origin (or specific focal point)
+                        this.camera.lookAt(
+                            this.openDrawer ? this.openDrawer.position.x : 0,
+                            this.openDrawer ? this.openDrawer.position.y + 0.5 : 2,
+                            this.openDrawer ? this.openDrawer.position.z + 1.5 : 0
+                        );
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            this.camera.position.copy(targetPosition); // Ensure final position
+                            // Ensure final frustum size
+                            this.camera.left = targetFrustumSize * aspect / -2;
+                            this.camera.right = targetFrustumSize * aspect / 2;
+                            this.camera.top = targetFrustumSize / 2;
+                            this.camera.bottom = targetFrustumSize / -2;
+                            this.camera.updateProjectionMatrix();
+                            resolve();
+                        }
+                    };
+                    animate();
+                });
+            }
+
+            showInfo(data) {
+                const panel = document.getElementById('info-panel');
+                const title = document.getElementById('info-title');
+                const description = document.getElementById('info-description');
+
+                title.textContent = data.title;
+                description.textContent = data.desc;
+                panel.classList.add('visible');
+            }
+
+            hideInfo() {
+                const panel = document.getElementById('info-panel');
+                panel.classList.remove('visible');
+            }
+
+            // Show 2D artifact modal (triggered if an artifact is clicked, or explicitly by UX)
+            show2DDrawer(drawer) {
+                this.is2DDrawerOpen = true;
+                document.getElementById('container').classList.add('modal-open');
+                document.body.style.cursor = 'default';
+                this.hideInfo();
+
+                const modal = document.getElementById('drawer-2d-modal');
+                const titleEl = document.getElementById('drawer-2d-title');
+                const descEl = document.getElementById('drawer-2d-description');
+                const artifactsContainer = document.getElementById('drawer-2d-artifacts');
+
+                titleEl.textContent = `Artifacts in: ${drawer.userData.data.title}`;
+                descEl.textContent = `These are abstract data fragments retrieved from the drawer.`;
+                artifactsContainer.innerHTML = '';
+
+                drawer.userData.artifacts.forEach(artifact => {
+                    const artifactData = artifact.userData.artifactData2D;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('artifact-2d-item');
+                    itemDiv.innerHTML = `
+                        <div class="icon">${artifactData.icon}</div>
+                        <div class="name">${artifactData.name}</div>
+                        <div class="description">${artifactData.description}</div>
+                    `;
+                    artifactsContainer.appendChild(itemDiv);
+                });
+                modal.classList.add('visible');
+            }
+
+            // Hide 2D artifact modal
+            hide2DDrawer() {
+                if (!this.is2DDrawerOpen) return Promise.resolve();
+
+                this.is2DDrawerOpen = false;
+                document.getElementById('container').classList.remove('modal-open');
+                document.getElementById('drawer-2d-modal').classList.remove('visible');
+
+                // No explicit action needed for 3D artifacts here, as they are managed by closeDrawer
+                return Promise.resolve();
+            }
+
+            // The main animation loop
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const time = this.clock.getElapsedTime();
+
+                // Animate floating artifacts
+                this.artifacts.forEach((artifact) => {
+                    const mainMesh = artifact.userData.mainMesh;
+                    if (!mainMesh || !mainMesh.material) return; // Skip if mesh/material is missing
+
+                    if (artifact.visible) {
+                        const offset = artifact.userData.floatOffset;
+
+                        // Emergence animation
+                        if (artifact.userData.isEmerging) {
+                            artifact.userData.emergenceProgress += this.clock.getDelta() * 1.5;
+                            const progress = Math.min(artifact.userData.emergenceProgress, 1);
+                            const eased = this.easeOutCubic(progress);
+
+                            artifact.position.lerpVectors(
+                                artifact.userData.startPosition,
+                                artifact.userData.targetPosition,
+                                eased
+                            );
+                            const targetScale = artifact.userData.originalScale;
+                            artifact.scale.setScalar(targetScale * eased);
+                            mainMesh.material.opacity = 0.05 + (targetScale * 0.85 - 0.05) * eased;
+
+                            artifact.rotation.x = Math.sin(time * 5 + offset) * 0.2 * (1 - eased);
+                            artifact.rotation.y += 0.05 * (1 - eased);
+                            artifact.rotation.z = Math.cos(time * 4 + offset) * 0.2 * (1 - eased);
+
+                            if (progress >= 1) {
+                                artifact.userData.isEmerging = false;
+                                artifact.position.copy(artifact.userData.targetPosition);
+                                artifact.scale.setScalar(targetScale);
+                                mainMesh.material.opacity = targetScale * 0.85;
+                                if (artifact.userData.onEmergenceComplete) {
+                                    artifact.userData.onEmergenceComplete();
+                                    artifact.userData.onEmergenceComplete = null;
+                                }
+                            }
+                        } else if (!this.is2DDrawerOpen && !this.isFileOpen) { // Normal floating animation only if no modal/file open
+                            artifact.rotation.y += 0.01;
+                            artifact.position.y = artifact.userData.targetPosition.y + Math.sin(time * 2 + offset) * 0.05;
+                        }
+                    }
+                });
+
+                // Animate floating file folders (similar logic)
+                this.fileFolders.forEach((fileFolder) => {
+                    const mainMesh = fileFolder.userData.mainMesh;
+                    if (!mainMesh || !mainMesh.material) return;
+
+                    if (fileFolder.visible) {
+                        const offset = fileFolder.uuid.charCodeAt(0) * 0.1; // Simple unique offset
+                        if (fileFolder.userData.isEmerging) {
+                            fileFolder.userData.emergenceProgress += this.clock.getDelta() * 1.5;
+                            const progress = Math.min(fileFolder.userData.emergenceProgress, 1);
+                            const eased = this.easeOutCubic(progress);
+
+                            fileFolder.position.lerpVectors(
+                                fileFolder.userData.originalPosition, // Files emerge from drawer position
+                                fileFolder.userData.targetPosition,
+                                eased
+                            );
+                            const targetScale = fileFolder.userData.originalScale;
+                            fileFolder.scale.setScalar(targetScale * eased);
+                            mainMesh.material.opacity = 0.05 + (targetScale * 0.9 - 0.05) * eased; // 0.9 for folders
+
+                            if (progress >= 1) {
+                                fileFolder.userData.isEmerging = false;
+                                fileFolder.position.copy(fileFolder.userData.targetPosition);
+                                fileFolder.scale.setScalar(targetScale);
+                                mainMesh.material.opacity = targetScale * 0.9;
+                                if (fileFolder.userData.onEmergenceComplete) {
+                                    fileFolder.userData.onEmergenceComplete();
+                                    fileFolder.userData.onEmergenceComplete = null;
+                                }
+                            }
+                        } else if (!this.is2DDrawerOpen && !this.isFileOpen) { // Normal floating if not in 2D/file view
+                            fileFolder.rotation.y += 0.005;
+                            fileFolder.position.y = fileFolder.userData.targetPosition.y + Math.sin(time * 1.5 + offset) * 0.03;
+                        }
+                    }
+                });
+
+                // Animate emerging documents within an open file folder
+                if (this.isFileOpen && this.activeFileFolder) {
+                    this.activeFileFolder.userData.documents.forEach((documentMesh) => {
+                        const mainMesh = documentMesh.userData.mainMesh;
+                        if (!mainMesh || !mainMesh.material) return;
+
+                        if (documentMesh.visible) {
+                            if (documentMesh.userData.isEmerging) {
+                                documentMesh.userData.emergenceProgress += this.clock.getDelta() * 2.0; // Faster document emergence
+                                const progress = Math.min(documentMesh.userData.emergenceProgress, 1);
+                                const eased = this.easeOutCubic(progress);
+
+                                documentMesh.position.lerpVectors(
+                                    documentMesh.userData.startPosition,
+                                    documentMesh.userData.targetPosition,
+                                    eased
+                                );
+                                documentMesh.scale.setScalar(documentMesh.userData.originalScale * eased);
+                                mainMesh.material.opacity = 0.05 + (0.95 - 0.05) * eased; // Documents are mostly opaque
+
+                                if (progress >= 1) {
+                                    documentMesh.userData.isEmerging = false;
+                                    documentMesh.position.copy(documentMesh.userData.targetPosition);
+                                    documentMesh.scale.setScalar(documentMesh.userData.originalScale);
+                                    mainMesh.material.opacity = 0.95;
+                                }
+                            }
+                        }
+                    });
+                }
+
+                this.updateDebugInfo();
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Initialize the memory vault
+        new IsoMemoryVault();
+    </script>
+</body>
+</html>

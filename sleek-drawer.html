@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleek Modern Drawer</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0f;
+            color: #ffffff;
+        }
+        #info {
+            position: absolute;
+            top: 30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            z-index: 100;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        canvas { 
+            display: block; 
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+    </style>
+</head>
+<body>
+    <div id="info">Hover near the drawer to open</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.11.4/dist/gsap.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0f);
+        scene.fog = new THREE.Fog(0x0a0a0f, 15, 30);
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 10);
+        camera.lookAt(0, 1, 0);
+        
+        // Renderer with better antialiasing
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+        
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+        
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+        mainLight.position.set(5, 10, 7);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        mainLight.shadow.camera.near = 0.5;
+        mainLight.shadow.camera.far = 50;
+        scene.add(mainLight);
+        
+        const fillLight = new THREE.DirectionalLight(0x4040ff, 0.3);
+        fillLight.position.set(-5, 3, -5);
+        scene.add(fillLight);
+        
+        // Materials
+        const drawerMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x0a0a0f,
+            metalness: 0.3,
+            roughness: 0.7,
+            clearcoat: 0.5,
+            clearcoatRoughness: 0.1,
+            emissive: 0x000000,
+            emissiveIntensity: 0.1,
+            side: THREE.DoubleSide
+        });
+        
+        const handleMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x4a90e2,
+            metalness: 0.9,
+            roughness: 0.2,
+            emissive: 0x4a90e2,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const folderMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x2a2a3a,
+            metalness: 0.1,
+            roughness: 0.5,
+            clearcoat: 0.2,
+            clearcoatRoughness: 0.3,
+            side: THREE.DoubleSide
+        });
+        
+        // Drawer group
+        const drawerGroup = new THREE.Group();
+        scene.add(drawerGroup);
+        
+        // Drawer body
+        const drawerBody = new THREE.Mesh(
+            new THREE.BoxGeometry(4, 4, 6),
+            drawerMaterial
+        );
+        drawerBody.position.y = 2;
+        drawerBody.castShadow = true;
+        drawerBody.receiveShadow = true;
+        drawerGroup.add(drawerBody);
+        
+        // Drawer front (sliding part)
+        const drawerFront = new THREE.Mesh(
+            new THREE.BoxGeometry(3.8, 3.8, 0.2),
+            new THREE.MeshPhysicalMaterial({
+                ...drawerMaterial,
+                color: 0x0a0a0f,
+                metalness: 0.2,
+                roughness: 0.6
+            })
+        );
+        drawerFront.position.z = 3;
+        drawerFront.position.y = 2;
+        drawerFront.castShadow = true;
+        drawerFront.receiveShadow = true;
+        drawerGroup.add(drawerFront);
+        
+        // Handle
+        const handle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.1, 1.2, 32),
+            handleMaterial
+        );
+        handle.rotation.x = Math.PI / 2;
+        handle.position.z = 3.11;
+        handle.position.y = 2;
+        handle.position.x = 0;
+        drawerGroup.add(handle);
+        
+        // Create folders
+        const folders = [];
+        const folderCount = 4;
+        const folderColors = [
+            0x4a90e2, // Blue
+            0xe84a5f, // Red
+            0x2ecc71, // Green
+            0xf9c74f  // Yellow
+        ];
+        
+        // Initial positions for folders (visible in drawer)
+        const folderPositions = [
+            { x: -1.8, y: 2, z: 2.2 },
+            { x: -0.6, y: 2, z: 1.8 },
+            { x: 0.6, y: 2, z: 2.2 },
+            { x: 1.8, y: 2, z: 1.8 }
+        ];
+        
+        for (let i = 0; i < folderCount; i++) {
+            const folder = new THREE.Group();
+            
+            // Folder body
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 2, 2.5),
+                new THREE.MeshPhysicalMaterial({
+                    ...folderMaterial,
+                    color: folderColors[i],
+                    metalness: 0.2,
+                    roughness: 0.4
+                })
+            );
+            body.position.y = 1.25;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            
+            // Folder tab
+            const tab = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6, 0.5, 0.1),
+                new THREE.MeshPhysicalMaterial({
+                    color: folderColors[i],
+                    metalness: 0.1,
+                    roughness: 0.3,
+                    emissive: folderColors[i],
+                    emissiveIntensity: 0.1
+                })
+            );
+            tab.position.y = 2.25;
+            tab.position.z = 0.05;
+            
+            folder.add(body);
+            folder.add(tab);
+            
+            // Position folders in a staggered arrangement
+            const pos = folderPositions[i];
+            folder.position.set(pos.x, pos.y, pos.z);
+            
+            // Add subtle random rotation to folders
+            folder.rotation.x = (Math.random() - 0.5) * 0.1;
+            folder.rotation.y = (Math.random() - 0.5) * 0.2 + (i % 2 === 0 ? 0.1 : -0.1);
+            folder.rotation.z = (Math.random() - 0.5) * 0.1;
+            
+            // Store initial positions for animation
+            folder.userData.initialPosition = { ...folder.position };
+            folder.userData.initialRotation = { ...folder.rotation };
+            
+            drawerGroup.add(folder);
+            folders.push(folder);
+        }
+        
+        // Add inner glow to drawer
+        const innerLight = new THREE.PointLight(0xffddaa, 3, 5, 2);
+        innerLight.position.set(0, 2, 0);
+        drawerGroup.add(innerLight);
+        
+        // Mouse interaction
+        const mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+        let isDrawerOpen = false;
+        let hoverProgress = 0;
+        
+        // Handle mouse move
+        function onMouseMove(event) {
+            // Calculate mouse position in normalized device coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            // Update raycast
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check intersection with drawer front
+            const intersects = raycaster.intersectObject(drawerFront);
+            
+            // Update hover state
+            const targetHover = intersects.length > 0 ? 1 : 0;
+            gsap.to(this, {
+                hoverProgress: targetHover,
+                duration: 0.5,
+                ease: 'power2.out',
+                onUpdate: updateDrawerState
+            });
+        }
+        
+        // Update drawer state based on hover progress
+        function updateDrawerState() {
+            // Update handle glow
+            const handleGlow = 0.5 + hoverProgress * 1.5;
+            handleMaterial.emissiveIntensity = handleGlow;
+            
+            // Update drawer position
+            const targetZ = isDrawerOpen ? 1.5 : 3;
+            drawerFront.position.z = THREE.MathUtils.lerp(3, targetZ, hoverProgress);
+            handle.position.z = drawerFront.position.z + 0.11;
+            
+            // Update inner light intensity
+            innerLight.intensity = hoverProgress * 3;
+            
+            // Slightly move folders based on hover
+            folders.forEach((folder, i) => {
+                const offset = hoverProgress * 0.1 * (i % 2 === 0 ? 1 : -1);
+                folder.position.x += (offset - folder.userData.offset || 0);
+                folder.userData.offset = offset;
+            });
+        }
+        
+        // Toggle drawer on click
+        function onClick() {
+            isDrawerOpen = !isDrawerOpen;
+            
+            // Animate folders when drawer opens/closes
+            folders.forEach((folder, i) => {
+                const delay = isDrawerOpen ? i * 0.05 : (folders.length - 1 - i) * 0.05;
+                const targetZ = isDrawerOpen ? 2.5 : folder.userData.initialPosition.z;
+                
+                // Animate position
+                gsap.to(folder.position, {
+                    x: isDrawerOpen ? 
+                        (i - 1.5) * 1.2 : 
+                        folder.userData.initialPosition.x,
+                    z: targetZ,
+                    duration: 0.7,
+                    delay: delay,
+                    ease: isDrawerOpen ? 'back.out(1.5)' : 'power2.inOut'
+                });
+                
+                // Animate rotation
+                gsap.to(folder.rotation, {
+                    x: isDrawerOpen ? (Math.random() - 0.5) * 0.2 : folder.userData.initialRotation.x,
+                    y: isDrawerOpen ? (i - 1.5) * 0.2 : folder.userData.initialRotation.y,
+                    z: isDrawerOpen ? (Math.random() - 0.5) * 0.1 : folder.userData.initialRotation.z,
+                    duration: 0.7,
+                    delay: delay,
+                    ease: isDrawerOpen ? 'elastic.out(1, 0.5)' : 'power2.inOut'
+                });
+                
+                // Add slight vertical movement for more organic feel
+                if (isDrawerOpen) {
+                    gsap.to(folder.position, {
+                        y: 2 + (Math.random() * 0.5 - 0.25),
+                        duration: 0.3,
+                        delay: delay + 0.1,
+                        yoyo: true,
+                        repeat: 1,
+                        ease: 'sine.inOut'
+                    });
+                }
+            });
+        }
+        
+        // Add event listeners
+        window.addEventListener('mousemove', onMouseMove, false);
+        window.addEventListener('click', onClick, false);
+        window.addEventListener('resize', onWindowResize, false);
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Pulsing handle glow
+            const pulse = Math.sin(Date.now() * 0.002) * 0.2 + 0.5;
+            handleMaterial.emissiveIntensity = (0.5 + hoverProgress * 1.5) * pulse;
+            
+            // Slight camera movement
+            const time = Date.now() * 0.0005;
+            camera.position.x = Math.sin(time * 0.5) * 0.5;
+            camera.position.z = 10 + Math.cos(time * 0.3) * 0.2;
+            camera.lookAt(0, 1, 0);
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

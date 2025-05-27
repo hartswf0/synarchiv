@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manilla Train - Wheel Alignment Debugger</title>
+    <style>
+        /* Manilla Office Theme & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            overflow: hidden;
+            color: #E9D7BE;
+        }
+        
+        canvas { 
+            display: block; 
+        }
+
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: #E9D7BE;
+            pointer-events: none;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(233, 215, 190, 0.1); /* Manilla-like translucent */
+            border: 2px solid #E9D7BE; /* Manilla border */
+            border-radius: 10px;
+            padding: 15px;
+            color: #E9D7BE;
+            font-size: 12px;
+            max-width: 280px;
+            backdrop-filter: blur(10px);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(233, 215, 190, 0.2);
+        }
+        .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .control-group h3 {
+            margin: 0 0 8px 0;
+            color: #CCBBAA; /* Darker manilla accent */
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .control-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            gap: 5px;
+        }
+        .control-item label {
+            flex: 0 0 60px; /* Fixed width for labels */
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .control-item input[type="range"] {
+            flex-grow: 1;
+            width: auto; /* Let it grow */
+            height: 4px;
+            background: rgba(233, 215, 190, 0.3);
+            border-radius: 2px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        .control-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E9D7BE;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        .control-item input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E9D7BE;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        .control-item select {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(233, 215, 190, 0.3);
+            color: #E9D7BE;
+            padding: 3px 5px;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        .value-display {
+            font-size: 12px;
+            width: 40px;
+            text-align: right;
+        }
+        button {
+            background: #E9D7BE;
+            color: #2d2d2d;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%; /* Full width buttons */
+        }
+        button:hover {
+            background: #f5e8d5;
+            transform: translateY(-1px);
+        }
+        button#resetBtn {
+            background: #AABBCB; /* Muted blue */
+            color: #2d2d2d;
+        }
+        button#lockBtn {
+            background: #4CAF50; /* Green for Locked */
+        }
+        button#lockBtn.unlocked {
+            background: #f44336; /* Red for Unlocked */
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Manilla Train - Wheel Alignment Debugger</div>
+    <div id="controls">
+        <div class="control-group">
+            <h3>Wheel Position</h3>
+            <div class="control-item">X: <input type="range" id="posX" min="-5" max="5" step="0.1" value="0"> <span id="posXVal" class="value-display">0.0</span></div>
+            <div class="control-item">Y: <input type="range" id="posY" min="0" max="5" step="0.1" value="1"> <span id="posYVal" class="value-display">1.0</span></div>
+            <div class="control-item">Z: <input type="range" id="posZ" min="-5" max="5" step="0.1" value="0"> <span id="posZVal" class="value-display">0.0</span></div>
+        </div>
+        <div class="control-group">
+            <h3>Wheel Static Rotation (degrees)</h3>
+            <p style="font-size: 10px; opacity: 0.8; margin-bottom: 5px;">Set initial wheel orientation. Default (correct) for flat wheel: X=90, Y=0, Z=0</p>
+            <div class="control-item">X: <input type="range" id="rotX" min="-180" max="180" step="1" value="90"> <span id="rotXVal" class="value-display">90°</span></div>
+            <div class="control-item">Y: <input type="range" id="rotY" min="-180" max="180" step="1" value="0"> <span id="rotYVal" class="value-display">0°</span></div>
+            <div class="control-item">Z: <input type="range" id="rotZ" min="-180" max="180" step="1" value="0"> <span id="rotZVal" class="value-display">0°</span></div>
+        </div>
+        <div class="control-group">
+            <h3>Rolling Motion</h3>
+            <p style="font-size: 10px; opacity: 0.8; margin-bottom: 5px;">Apply continuous roll to selected local axis. Default (correct) for flat wheel: Z</p>
+            <div class="control-item">
+                <label for="rollingAxis">Rolling Axis:</label>
+                <select id="rollingAxis">
+                    <option value="x">X</option>
+                    <option value="y">Y</option>
+                    <option value="z" selected>Z</option>
+                </select>
+            </div>
+            <div class="control-item">Speed: <input type="range" id="speed" min="0" max="10" step="0.1" value="2"> <span id="speedVal" class="value-display">2.0</span></div>
+        </div>
+        <div class="control-group">
+            <h3>Scale</h3>
+            <div class="control-item">X: <input type="range" id="scaleX" min="0.1" max="3" step="0.1" value="1"> <span id="scaleXVal" class="value-display">1.0</span></div>
+            <div class="control-item">Y: <input type="range" id="scaleY" min="0.1" max="3" step="0.1" value="1"> <span id="scaleYVal" class="value-display">1.0</span></div>
+            <div class="control-item">Z: <input type="range" id="scaleZ" min="0.1" max="3" step="0.1" value="1"> <span id="scaleZVal" class="value-display">1.0</span></div>
+        </div>
+        <div class="control-group">
+            <button id="resetBtn">Reset to Defaults</button>
+            <button id="lockBtn" class="unlocked">Lock Transform</button>
+            <button id="exportBtn">Export JSON</button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // Manilla Office Color Palette (Re-defined for this file)
+        const manillaPaperColor = new THREE.Color(0xE9D7BE);
+        const darkOfficeGrey = new THREE.Color(0x2a2a2a);
+        const mediumOfficeGrey = new THREE.Color(0x3d3d3d);
+        const lightOfficeGrey = new THREE.Color(0x4a4a4a);
+        const edgeColor = new THREE.Color(0xCCBBAA);
+
+        // Helper to create a subtle speckle texture for paper effect
+        function createSpeckleTexture(width = 256, height = 256) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(255, 255, 255, 0)'; // Transparent background
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < 1000; i++) { // More speckles for denser paper look
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                const alpha = Math.random() * 0.15; // Muted speckles
+                ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+        const paperSpeckleTexture = createSpeckleTexture();
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = darkOfficeGrey; // Manilla Office Background
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 5, 5);
+        camera.lookAt(0, 0, 0);
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x606060, 0.6); // Muted Ambient
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        // Ground plane
+        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        const groundMaterial = new THREE.MeshLambertMaterial({ 
+            color: darkOfficeGrey, // Darker ground
+            map: paperSpeckleTexture,
+            transparent: true,
+            opacity: 0.9
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Grid helper for better spatial reference (Manilla Office style)
+        const gridHelper = new THREE.GridHelper(20, 20, lightOfficeGrey.getHex(), mediumOfficeGrey.getHex());
+        scene.add(gridHelper);
+        
+        // World Axes helper (X:red, Y:green, Z:blue)
+        const worldAxesHelper = new THREE.AxesHelper(5);
+        scene.add(worldAxesHelper);
+        
+        // Wheel parameters
+        const wheelRadius = 1;
+        const wheelWidth = 0.3; // This is the 'height' of the cylinder
+        const wheelSegments = 32;
+        
+        // Create wheel (CylinderGeometry by default has height along Y-axis)
+        const wheelGeometry = new THREE.CylinderGeometry(
+            wheelRadius,    // radius top
+            wheelRadius,    // radius bottom
+            wheelWidth,     // height (length of the cylinder)
+            wheelSegments   // radial segments
+        );
+        
+        const wheelMaterial = new THREE.MeshLambertMaterial({ 
+            color: mediumOfficeGrey, // Dark grey for the wheel
+            map: paperSpeckleTexture,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        // Create a group for the wheel assembly
+        const wheelGroup = new THREE.Group();
+        
+        // Create the wheel mesh (child of wheelGroup)
+        const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheel.position.y = 0; // Relative to wheelGroup's local center
+        wheel.castShadow = true;
+        wheel.receiveShadow = true;
+        
+        // Add visual markings to the wheel (for rotation visibility)
+        const markingsMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
+        });
+        const wheelMarkings = new THREE.Mesh(wheelGeometry, markingsMaterial); // Use same geometry for simplicity
+        wheel.add(wheelMarkings); // Add as child of wheel mesh
+
+        // Add a local axes helper to the wheel mesh itself
+        const wheelLocalAxesHelper = new THREE.AxesHelper(wheelRadius * 1.5); // Slightly larger
+        wheel.add(wheelLocalAxesHelper);
+        
+        // Add red and yellow stripes to the wheel for clearer rolling visualization
+        const stripeCount = 4; // Fewer, bolder stripes
+        for (let i = 0; i < stripeCount; i++) {
+            const angle = (i / stripeCount) * Math.PI * 2;
+            const stripeHeight = wheelRadius * 0.9;
+            const stripeWidth = 0.1;
+
+            // Define the stripe geometry (a thin box)
+            const stripeGeometry = new THREE.BoxGeometry(stripeHeight, stripeWidth, wheelWidth * 1.5); // Flat against the wheel's surface
+
+            const stripeMaterial = new THREE.MeshBasicMaterial({
+                color: (i % 2 === 0 ? 0xff0000 : 0xffff00), // Red/Yellow
+                side: THREE.DoubleSide
+            });
+            
+            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+            
+            // Position the stripe on the surface of the cylinder, centered.
+            // Remember, CylinderGeometry height is along Y. We want stripes on the circular faces.
+            // Its local Z-axis is perpendicular to its circular faces.
+            stripe.position.set(
+                0, // Z-axis for its own geometry
+                0,
+                wheelRadius * 0.5 // Position it on the cylindrical surface
+            );
+            // Rotate the stripe so it lays on the cylinder surface, then rotate around its Y to position it.
+            stripe.rotation.y = Math.PI / 2; // Make stripe horizontal to local Y
+            stripe.rotation.z = angle; // Rotate around Y (main axis) to place it.
+
+            wheel.add(stripe);
+        }
+
+        // Add wheel to the group
+        wheelGroup.add(wheel);
+        
+        // Add a small red cylinder to visualize the axle (local to the wheel group)
+        const axleGeometry = new THREE.CylinderGeometry(
+            0.1,    // radius top
+            0.1,    // radius bottom
+            wheelRadius * 2.5, // height, longer than wheel width to extend
+            16      // segments
+        );
+        const axleMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xff0000, // Bright red for visibility
+            transparent: true,
+            opacity: 0.7
+        });
+        const axle = new THREE.Mesh(axleGeometry, axleMaterial);
+        // By default, axle's height is along Y. We need to orient it to show the wheel's local axle.
+        // Assuming wheel is rotated (e.g., rotX=90), its axle is along its local X.
+        axle.rotation.z = Math.PI / 2; // Rotate axle to align its height (Y) with local X for visualization
+        wheelGroup.add(axle); // Add to wheelGroup, so it moves with the wheel and its group transforms
+
+
+        // Position the wheel group above the ground
+        wheelGroup.position.y = wheelRadius; // Place wheel center at wheelRadius height
+
+        // Add wheel group to the scene
+        scene.add(wheelGroup);
+        
+        // Create a simple track (Manilla Office style)
+        const trackWidth = 1.5;
+        const trackGeometry = new THREE.BoxGeometry(10, 0.1, trackWidth);
+        const trackMaterial = new THREE.MeshLambertMaterial({ 
+            color: lightOfficeGrey, // Light grey rails
+            map: paperSpeckleTexture,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        // Create track ties
+        for (let i = -4; i <= 4; i += 0.5) {
+            const tie = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.2, trackWidth * 1.5),
+                new THREE.MeshLambertMaterial({ 
+                    color: manillaPaperColor, // Manilla ties
+                    map: paperSpeckleTexture,
+                    transparent: true,
+                    opacity: 0.9
+                })
+            );
+            tie.position.set(i, 0.05, 0);
+            tie.receiveShadow = true;
+            scene.add(tie);
+
+            const tieEdges = new THREE.EdgesGeometry(tie.geometry);
+            const tieOutline = new THREE.LineSegments(tieEdges, new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0.3 }));
+            tieOutline.position.copy(tie.position);
+            scene.add(tieOutline);
+        }
+        
+        // Add rails
+        const railGeometry = new THREE.BoxGeometry(10, 0.1, 0.1);
+        const railMaterial = new THREE.MeshLambertMaterial({ 
+            color: mediumOfficeGrey, // Dark grey rails
+            map: paperSpeckleTexture,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        const leftRail = new THREE.Mesh(railGeometry, railMaterial);
+        leftRail.position.set(0, 0.15, -trackWidth/2 + 0.05);
+        leftRail.receiveShadow = true;
+        scene.add(leftRail);
+        
+        const rightRail = new THREE.Mesh(railGeometry, railMaterial);
+        rightRail.position.set(0, 0.15, trackWidth/2 - 0.05);
+        rightRail.receiveShadow = true;
+        scene.add(rightRail);
+        
+        // Transformation controls references
+        const posXSlider = document.getElementById('posX');
+        const posYSlider = document.getElementById('posY');
+        const posZSlider = document.getElementById('posZ');
+        const rotXSlider = document.getElementById('rotX');
+        const rotYSlider = document.getElementById('rotY');
+        const rotZSlider = document.getElementById('rotZ');
+        const scaleXSlider = document.getElementById('scaleX');
+        const scaleYSlider = document.getElementById('scaleY');
+        const scaleZSlider = document.getElementById('scaleZ');
+        const speedSlider = document.getElementById('speed');
+        const rollingAxisSelect = document.getElementById('rollingAxis');
+
+        const updateTransform = () => {
+            // Update position
+            wheelGroup.position.x = parseFloat(posXSlider.value);
+            wheelGroup.position.y = parseFloat(posYSlider.value);
+            wheelGroup.position.z = parseFloat(posZSlider.value);
+            
+            // Update static rotation of the wheel mesh itself (child of wheelGroup)
+            // Note: wheelGroup handles position/scale, wheel mesh handles its *own* rotation
+            wheel.rotation.x = parseFloat(rotXSlider.value) * (Math.PI / 180);
+            wheel.rotation.y = parseFloat(rotYSlider.value) * (Math.PI / 180);
+            wheel.rotation.z = parseFloat(rotZSlider.value) * (Math.PI / 180);
+            
+            // Update scale (applied to the group for now, could be per-mesh)
+            wheelGroup.scale.set(
+                parseFloat(scaleXSlider.value),
+                parseFloat(scaleYSlider.value),
+                parseFloat(scaleZSlider.value)
+            );
+            
+            // Update display values
+            document.getElementById('posXVal').textContent = posXSlider.value;
+            document.getElementById('posYVal').textContent = posYSlider.value;
+            document.getElementById('posZVal').textContent = posZSlider.value;
+            document.getElementById('rotXVal').textContent = rotXSlider.value + '°';
+            document.getElementById('rotYVal').textContent = rotYSlider.value + '°';
+            document.getElementById('rotZVal').textContent = rotZSlider.value + '°';
+            document.getElementById('scaleXVal').textContent = scaleXSlider.value;
+            document.getElementById('scaleYVal').textContent = scaleYSlider.value;
+            document.getElementById('scaleZVal').textContent = scaleZSlider.value;
+            document.getElementById('speedVal').textContent = speedSlider.value;
+        };
+        
+        // Add event listeners
+        [posXSlider, posYSlider, posZSlider, rotXSlider, rotYSlider, rotZSlider, scaleXSlider, scaleYSlider, scaleZSlider, speedSlider, rollingAxisSelect].forEach(control => {
+            control.addEventListener('input', updateTransform);
+            if (control.tagName === 'SELECT') { // For dropdowns
+                control.addEventListener('change', updateTransform);
+            }
+        });
+        
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            // Reset position
+            posXSlider.value = 0; posYSlider.value = wheelRadius; posZSlider.value = 0; // Correct initial Y for wheelGroup
+            // Reset static rotation to theoretically correct values
+            rotXSlider.value = 90; rotYSlider.value = 0; rotZSlider.value = 0;
+            // Reset scale
+            scaleXSlider.value = 1; scaleYSlider.value = 1; scaleZSlider.value = 1;
+            // Reset rolling properties
+            speedSlider.value = 2;
+            rollingAxisSelect.value = 'z';
+
+            // Update
+            updateTransform();
+            // Reset animation state
+            distance = 0;
+        });
+        
+        // Lock button
+        let isLocked = false;
+        const lockBtn = document.getElementById('lockBtn');
+        lockBtn.addEventListener('click', () => {
+            isLocked = !isLocked;
+            lockBtn.textContent = isLocked ? 'Unlock Transform' : 'Lock Transform';
+            lockBtn.classList.toggle('unlocked');
+            
+            // Disable/enable all relevant sliders (except speed)
+            [posXSlider, posYSlider, posZSlider, rotXSlider, rotYSlider, rotZSlider, scaleXSlider, scaleYSlider, scaleZSlider, rollingAxisSelect].forEach(slider => {
+                slider.disabled = isLocked;
+            });
+        });
+
+        // Export JSON button
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const transformData = {
+                position: {
+                    x: wheelGroup.position.x,
+                    y: wheelGroup.position.y,
+                    z: wheelGroup.position.z
+                },
+                rotation_degrees: { // Export in degrees for readability in JSON
+                    x: parseFloat(rotXSlider.value),
+                    y: parseFloat(rotYSlider.value),
+                    z: parseFloat(rotZSlider.value)
+                },
+                scale: {
+                    x: wheelGroup.scale.x,
+                    y: wheelGroup.scale.y,
+                    z: wheelGroup.scale.z
+                },
+                rolling_properties: {
+                    axis: rollingAxisSelect.value,
+                    speed: parseFloat(speedSlider.value)
+                }
+            };
+
+            const jsonString = JSON.stringify(transformData, null, 2); // Pretty print JSON
+            console.log("Exported Transform Data:\n", jsonString);
+
+            // Optional: Provide a way to download the JSON
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wheel_transform_settings.json';
+            document.body.appendChild(a); // Append to body to make it clickable
+            a.click(); // Programmatically click the anchor
+            document.body.removeChild(a); // Clean up
+            URL.revokeObjectURL(url); // Release the object URL
+        });
+        
+        // Initial update
+        updateTransform();
+        
+        // Animation variables
+        let distance = 0;
+        let lastTimestamp = 0; // For deltaTime
+        
+        // Animation loop
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            // Calculate deltaTime for smooth, frame-rate independent animation
+            const deltaTime = (timestamp - lastTimestamp) / 1000 || 0; // In seconds, default to 0 if first frame
+            lastTimestamp = timestamp;
+
+            const currentSpeed = parseFloat(speedSlider.value);
+            const wheelCircumference = 2 * Math.PI * wheelRadius;
+            
+            if (!isLocked && currentSpeed > 0) { // Only roll if not locked and speed > 0
+                distance += currentSpeed * deltaTime;
+                const rotationAngle = (distance % wheelCircumference) / wheelRadius; // Angle in radians
+
+                // Apply dynamic rolling rotation to the wheel mesh's selected local axis
+                if (rollingAxisSelect.value === 'x') {
+                    wheel.rotation.x -= rotationAngle; // Use -= to make it visually roll forward with +speed
+                } else if (rollingAxisSelect.value === 'y') {
+                    wheel.rotation.y -= rotationAngle;
+                } else if (rollingAxisSelect.value === 'z') {
+                    wheel.rotation.z -= rotationAngle;
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Start animation
+        animate(0); // Pass initial timestamp
+    </script>
+</body>
+</html>

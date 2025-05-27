@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Track Simulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            max-width: 300px;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+        }
+        
+        .control-group h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .slider-container label {
+            width: 100px;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            margin: 0 10px;
+        }
+        
+        .value-display {
+            width: 50px;
+            text-align: right;
+            font-family: monospace;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        
+        .track-type {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        
+        .track-type button {
+            flex: 1;
+            min-width: 60px;
+            padding: 5px;
+            font-size: 12px;
+        }
+        
+        .track-type button.active {
+            background: #45a049;
+            border: 1px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Train Track Simulator</div>
+    <div id="ui">
+        <div class="control-group">
+            <h3>Train Controls</h3>
+            <div class="slider-container">
+                <label>Speed:</label>
+                <input type="range" id="speed" min="-10" max="10" step="0.1" value="0">
+                <span class="value-display" id="speedValue">0.0</span>
+            </div>
+            <div class="slider-container">
+                <label>Track Gauge:</label>
+                <input type="range" id="gauge" min="0.5" max="2" step="0.001" value="1.435">
+                <span class="value-display" id="gaugeValue">1.435m</span>
+            </div>
+            <div class="slider-container">
+                <label>Track Cant:</label>
+                <input type="range" id="cant" min="-15" max="15" step="0.5" value="0">
+                <span class="value-display" id="cantValue">0.0°</span>
+            </div>
+            
+            <div class="track-type">
+                <button id="straightTrack" class="active">Straight</button>
+                <button id="squareTrack">Square</button>
+                <button id="octagonTrack">Octagon</button>
+                <button id="hexadecagonTrack">16-gon</button>
+                <button id="circleTrack">Circle</button>
+            </div>
+            
+            <div class="button-row">
+                <button id="addCar">Add Car</button>
+                <button id="resetSim" class="danger">Reset</button>
+            </div>
+            
+            <div class="button-row">
+                <button id="viewTop">Top View</button>
+                <button id="viewSide">Side View</button>
+                <button id="viewFront">Front View</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Main variables
+        let scene, camera, renderer, controls;
+        let trainCars = [];
+        let trackSegments = [];
+        let clock = new THREE.Clock();
+        
+        // Track parameters
+        const trackParams = {
+            gauge: 1.435,    // Standard gauge in meters
+            cant: 0,         // Cant angle in degrees
+            length: 20,      // Track length for straight segments
+            sleeperSpacing: 0.5, // Distance between sleepers
+            type: 'straight', // Track type
+            sides: 0,        // 0 = straight, 4 = square, 8 = octagon, etc.
+            radius: 10,      // Radius for curved segments
+            segmentLength: 10 // Length of each straight segment
+        };
+        
+        // Wheel parameters
+        const wheelParams = {
+            radius: 0.5,
+            width: 0.15,
+            flangeHeight: 0.08,
+            flangeWidth: 0.1
+        };
+        
+        // Initialize the scene
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 15);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+            
+            // Add orbit controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // Create ground and track
+            createGround();
+            updateTrack();
+            
+            // Add a train car
+            addTrainCar();
+            
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            
+            // UI Controls
+            setupUIControls();
+        }
+        
+        function createGround() {
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x3a5f0b,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(50, 50, 0x555555, 0x333333);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+        }
+        
+        function createWheel(x, y, z, color = 0x333333) {
+            const group = new THREE.Group();
+            
+            // Wheel geometry
+            const wheelGeometry = new THREE.CylinderGeometry(
+                wheelParams.radius, 
+                wheelParams.radius, 
+                wheelParams.width, 
+                32
+            );
+            
+            // Flange geometry
+            const flangeGeometry = new THREE.TorusGeometry(
+                wheelParams.radius + wheelParams.flangeHeight,
+                wheelParams.flangeWidth,
+                16,
+                32,
+                Math.PI * 2
+            );
+            
+            const wheelMaterial = new THREE.MeshStandardMaterial({ 
+                color: color,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            
+            // Create wheel
+            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheel.rotation.z = Math.PI / 2;
+            wheel.castShadow = true;
+            wheel.receiveShadow = true;
+            
+            // Create flange
+            const flange = new THREE.Mesh(flangeGeometry, wheelMaterial);
+            flange.rotation.x = Math.PI / 2;
+            flange.position.y = wheelParams.width / 2 + 0.01;
+            flange.castShadow = true;
+            
+            // Add wheel and flange to group
+            group.add(wheel);
+            group.add(flange);
+            
+            // Position the group
+            group.position.set(x, y, z);
+            
+            // Add visual indicators
+            addWheelMarkings(group);
+            
+            return group;
+        }
+        
+        function addWheelMarkings(wheelGroup) {
+            // Add red stripe to wheel
+            const stripeGeometry = new THREE.CylinderGeometry(
+                wheelParams.radius * 0.95,
+                wheelParams.radius * 0.95,
+                wheelParams.width * 1.1,
+                32,
+                1,
+                true
+            );
+            
+            const stripeMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff0000,
+                transparent: true,
+                opacity: 0.7,
+                side: THREE.DoubleSide
+            });
+            
+            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+            stripe.rotation.z = Math.PI / 2;
+            stripe.position.y = wheelGroup.children[0].position.y;
+            
+            wheelGroup.add(stripe);
+        }
+        
+        function createTrackSegment(start, end, cantRad) {
+            const direction = new THREE.Vector3().subVectors(end, start).normalize();
+            const length = start.distanceTo(end);
+            const angle = Math.atan2(direction.x, direction.z);
+            
+            const segment = {
+                start: start,
+                end: end,
+                direction: direction,
+                length: length,
+                angle: angle,
+                cant: cantRad,
+                type: 'straight',
+                center: new THREE.Vector3((start.x + end.x) / 2, 0, (start.z + end.z) / 2)
+            };
+            
+            // Create visual representation
+            const railGeometry = new THREE.BoxGeometry(0.1, 0.1, length);
+            const railMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x444444,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            
+            // Left rail
+            const leftRail = new THREE.Mesh(railGeometry, railMaterial);
+            leftRail.position.copy(segment.center);
+            leftRail.rotation.x = -cantRad;
+            leftRail.rotation.y = -angle;
+            leftRail.position.y = 0.05;
+            leftRail.castShadow = true;
+            leftRail.receiveShadow = true;
+            scene.add(leftRail);
+            
+            // Right rail
+            const rightRail = new THREE.Mesh(railGeometry, railMaterial);
+            rightRail.position.copy(segment.center);
+            rightRail.rotation.x = -cantRad;
+            rightRail.rotation.y = -angle;
+            rightRail.position.y = 0.05;
+            rightRail.position.x += Math.sin(angle) * trackParams.gauge;
+            rightRail.position.z += Math.cos(angle) * trackParams.gauge;
+            rightRail.castShadow = true;
+            rightRail.receiveShadow = true;
+            scene.add(rightRail);
+            
+            // Add sleepers
+            const sleeperGeometry = new THREE.BoxGeometry(trackParams.gauge + 0.4, 0.1, 0.2);
+            const sleeperMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x5D4037,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            
+            const sleeperCount = Math.floor(length / trackParams.sleeperSpacing);
+            for (let i = 0; i < sleeperCount; i++) {
+                const t = i / (sleeperCount - 1);
+                const pos = new THREE.Vector3().lerpVectors(start, end, t);
+                
+                const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial);
+                sleeper.position.copy(pos);
+                sleeper.rotation.y = -angle;
+                sleeper.rotation.x = -cantRad * Math.cos(angle);
+                sleeper.rotation.z = -cantRad * Math.sin(angle);
+                sleeper.position.y = 0.05;
+                sleeper.castShadow = true;
+                sleeper.receiveShadow = true;
+                scene.add(sleeper);
+            }
+            
+            segment.visuals = [leftRail, rightRail];
+            return segment;
+        }
+        
+        function createCircularSegment(center, radius, startAngle, endAngle, cantRad) {
+            const points = 16;
+            const angleStep = (endAngle - startAngle) / points;
+            const segments = [];
+            
+            for (let i = 0; i < points; i++) {
+                const angle1 = startAngle + i * angleStep;
+                const angle2 = startAngle + (i + 1) * angleStep;
+                
+                const x1 = center.x + Math.cos(angle1) * radius;
+                const z1 = center.z + Math.sin(angle1) * radius;
+                const x2 = center.x + Math.cos(angle2) * radius;
+                const z2 = center.z + Math.sin(angle2) * radius;
+                
+                const start = new THREE.Vector3(x1, 0, z1);
+                const end = new THREE.Vector3(x2, 0, z2);
+                
+                // Calculate cant based on position in curve
+                const midAngle = (angle1 + angle2) / 2;
+                const segmentCant = cantRad * Math.cos(midAngle);
+                
+                segments.push(createTrackSegment(start, end, segmentCant));
+            }
+            
+            return segments;
+        }
+        
+        function updateTrack() {
+            // Remove existing track
+            trackSegments.forEach(segment => {
+                if (segment.visuals) {
+                    segment.visuals.forEach(obj => scene.remove(obj));
+                }
+            });
+            trackSegments = [];
+            
+            const cantRad = THREE.MathUtils.degToRad(trackParams.cant);
+            
+            if (trackParams.sides === 0) {
+                // Straight track
+                const start = new THREE.Vector3(0, 0, -trackParams.length/2);
+                const end = new THREE.Vector3(0, 0, trackParams.length/2);
+                trackSegments.push(createTrackSegment(start, end, cantRad));
+            } else {
+                // Polygonal track
+                const center = new THREE.Vector3(0, 0, 0);
+                const radius = trackParams.radius;
+                const angleStep = (Math.PI * 2) / trackParams.sides;
+                
+                for (let i = 0; i < trackParams.sides; i++) {
+                    const angle1 = i * angleStep;
+                    const angle2 = ((i + 1) % trackParams.sides) * angleStep;
+                    
+                    const x1 = Math.cos(angle1) * radius;
+                    const z1 = Math.sin(angle1) * radius;
+                    const x2 = Math.cos(angle2) * radius;
+                    const z2 = Math.sin(angle2) * radius;
+                    
+                    const start = new THREE.Vector3(x1, 0, z1);
+                    const end = new THREE.Vector3(x2, 0, z2);
+                    
+                    // Calculate cant based on position in polygon
+                    const midAngle = (angle1 + angle2) / 2;
+                    const segmentCant = cantRad * Math.cos(midAngle);
+                    
+                    trackSegments.push(createTrackSegment(start, end, segmentCant));
+                }
+            }
+            
+            // Update UI
+            document.getElementById('gaugeValue').textContent = trackParams.gauge.toFixed(3) + 'm';
+            document.getElementById('cantValue').textContent = trackParams.cant.toFixed(1) + '°';
+        }
+        
+        function addTrainCar() {
+            const car = {
+                wheels: [],
+                body: null,
+                position: 0,
+                speed: 0,
+                targetSpeed: 0,
+                currentSegment: 0,
+                trackProgress: 0
+            };
+            
+            // Create wheels
+            const wheelPositions = [
+                { x: -trackParams.gauge/2, y: wheelParams.radius, z: -1 },
+                { x: trackParams.gauge/2, y: wheelParams.radius, z: -1 },
+                { x: -trackParams.gauge/2, y: wheelParams.radius, z: 1 },
+                { x: trackParams.gauge/2, y: wheelParams.radius, z: 1 }
+            ];
+            
+            wheelPositions.forEach(pos => {
+                const wheel = createWheel(pos.x, pos.y, pos.z);
+                car.wheels.push(wheel);
+                scene.add(wheel);
+            });
+            
+            // Create car body
+            const bodyGeometry = new THREE.BoxGeometry(2, 1, 4);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4CAF50,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            
+            car.body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            car.body.position.y = 1.5;
+            car.body.castShadow = true;
+            car.body.receiveShadow = true;
+            scene.add(car.body);
+            
+            trainCars.push(car);
+            return car;
+        }
+        
+        function updateTrainCars(delta) {
+            trainCars.forEach(car => {
+                // Update speed (simple acceleration)
+                const acceleration = (car.targetSpeed - car.speed) * 0.1;
+                car.speed += acceleration * delta;
+                
+                if (trackSegments.length === 0) return;
+                
+                // Update position along track
+                car.trackProgress += car.speed * delta;
+                
+                // Handle track segments
+                if (car.trackProgress > trackSegments[car.currentSegment].length) {
+                    car.trackProgress -= trackSegments[car.currentSegment].length;
+                    car.currentSegment = (car.currentSegment + 1) % trackSegments.length;
+                } else if (car.trackProgress < 0) {
+                    car.currentSegment = (car.currentSegment - 1 + trackSegments.length) % trackSegments.length;
+                    car.trackProgress = trackSegments[car.currentSegment].length + car.trackProgress;
+                }
+                
+                const segment = trackSegments[car.currentSegment];
+                const t = car.trackProgress / segment.length;
+                
+                // Calculate position along segment
+                const position = new THREE.Vector3().lerpVectors(segment.start, segment.end, t);
+                
+                // Calculate orientation
+                const angle = Math.atan2(
+                    segment.end.x - segment.start.x,
+                    segment.end.z - segment.start.z
+                );
+                
+                // Update wheel rotations
+                const rotationSpeed = car.speed / (wheelParams.radius * 2);
+                
+                // Position wheels
+                const wheelAngle = angle + Math.PI/2;
+                const leftX = Math.sin(wheelAngle) * trackParams.gauge/2;
+                const leftZ = Math.cos(wheelAngle) * trackParams.gauge/2;
+                
+                car.wheels[0].position.set(position.x - leftX, wheelParams.radius, position.z - leftZ);
+                car.wheels[1].position.set(position.x + leftX, wheelParams.radius, position.z + leftZ);
+                car.wheels[2].position.set(position.x - leftX, wheelParams.radius, position.z - leftZ);
+                car.wheels[3].position.set(position.x + leftX, wheelParams.radius, position.z + leftZ);
+                
+                // Rotate wheels
+                car.wheels.forEach(wheel => {
+                    wheel.rotation.x += rotationSpeed * delta * Math.PI * 2;
+                    wheel.rotation.y = -angle;
+                });
+                
+                // Update car body
+                if (car.body) {
+                    car.body.position.copy(position);
+                    car.body.position.y = 1.5;
+                    car.body.rotation.y = -angle;
+                    
+                    // Apply cant to car body
+                    car.body.rotation.z = -segment.cant * Math.cos(angle);
+                    car.body.rotation.x = -segment.cant * Math.sin(angle);
+                }
+            });
+        }
+        
+        function setupUIControls() {
+            // Speed control
+            const speedInput = document.getElementById('speed');
+            const speedValue = document.getElementById('speedValue');
+            
+            // Track type buttons
+            const trackTypeButtons = {
+                'straight': document.getElementById('straightTrack'),
+                'square': document.getElementById('squareTrack'),
+                'octagon': document.getElementById('octagonTrack'),
+                'hexadecagon': document.getElementById('hexadecagonTrack'),
+                'circle': document.getElementById('circleTrack')
+            };
+            
+            function setTrackType(type) {
+                switch(type) {
+                    case 'straight':
+                        trackParams.sides = 0;
+                        break;
+                    case 'square':
+                        trackParams.sides = 4;
+                        break;
+                    case 'octagon':
+                        trackParams.sides = 8;
+                        break;
+                    case 'hexadecagon':
+                        trackParams.sides = 16;
+                        break;
+                    case 'circle':
+                        trackParams.sides = 32;
+                        break;
+                }
+                
+                // Update button states
+                Object.entries(trackTypeButtons).forEach(([key, button]) => {
+                    button.classList.toggle('active', key === type);
+                });
+                
+                // Reset train cars
+                trainCars = [];
+                addTrainCar();
+                
+                // Update track
+                updateTrack();
+            }
+            
+            // Add event listeners for track type buttons
+            Object.entries(trackTypeButtons).forEach(([type, button]) => {
+                button.addEventListener('click', () => setTrackType(type));
+            });
+            
+            speedInput.addEventListener('input', (e) => {
+                const speed = parseFloat(e.target.value);
+                speedValue.textContent = speed.toFixed(1);
+                trainCars.forEach(car => {
+                    car.targetSpeed = speed * 0.1; // Scale down for more control
+                });
+            });
+            
+            // Track gauge control
+            const gaugeInput = document.getElementById('gauge');
+            gaugeInput.addEventListener('input', (e) => {
+                trackParams.gauge = parseFloat(e.target.value);
+                updateTrack();
+            });
+            
+            // Track cant control
+            const cantInput = document.getElementById('cant');
+            cantInput.addEventListener('input', (e) => {
+                trackParams.cant = parseFloat(e.target.value);
+                updateTrack();
+            });
+            
+            // Add car button
+            document.getElementById('addCar').addEventListener('click', () => {
+                addTrainCar();
+            });
+            
+            // Reset button
+            document.getElementById('resetSim').addEventListener('click', () => {
+                // Reset all cars
+                trainCars = [];
+                // Add one car back
+                addTrainCar();
+                // Reset speed
+                speedInput.value = 0;
+                speedValue.textContent = '0.0';
+                // Reset track
+                trackParams.gauge = 1.435;
+                trackParams.cant = 0;
+                trackParams.radius = 10;
+                gaugeInput.value = trackParams.gauge;
+                cantInput.value = trackParams.cant;
+                updateTrack();
+            });
+            
+            // View controls
+            document.getElementById('viewTop').addEventListener('click', () => {
+                camera.position.set(0, 15, 0);
+                camera.lookAt(0, 0, 0);
+                camera.rotation.z = 0;
+            });
+            
+            document.getElementById('viewSide').addEventListener('click', () => {
+                camera.position.set(15, 3, 0);
+                camera.lookAt(0, 1, 0);
+            });
+            
+            document.getElementById('viewFront').addEventListener('click', () => {
+                camera.position.set(0, 3, 15);
+                camera.lookAt(0, 1, 0);
+            });
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = Math.min(0.1, clock.getDelta());
+            
+            // Update train cars
+            updateTrainCars(delta);
+            
+            // Update controls
+            controls.update();
+            
+            // Render scene
+            renderer.render(scene, camera);
+        }
+        
+        // Start the application
+        init();
+        animate();
+    </script>
+</body>
+</html>

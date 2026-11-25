@@ -4,7 +4,7 @@
   'use strict';
   if (typeof THREE === 'undefined' || typeof renderer === 'undefined' || !renderer || window.trainFilm) return;
   const T=THREE, V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z), clamp=T.MathUtils.clamp;
-  const F=.94, H=2.75, W=1.83, XAX=V(1,0,0), modes=['Seat','Follow','Orbit','Window','Exterior','Witness','Model'];
+  const F=.94, H=2.75, W=1.83, XAX=V(1,0,0), modes=['Seat','Follow','Orbit','Window','Exterior','Witness','Model','Surveillance'];
   const names=['Quiet car','Dining car','Greenhouse','Surveillance','World within a world'];
   const state={active:false,auto:false,time:0,s:-3.75,z:1.18,seated:true,seatBlend:1,transition:null,face:1,mode:'Seat',yaw:0,pitch:0,orbit:0,gait:0,events:new Set(),log:[],car:1,keys:new Set(),recording:false,frame:0};
   let landscape,hidden=[],extra=[],built=[],bridges=[],actor,parallel,mini,feeds=[],last=performance.now(),camP,camA,camRef,legacy,record=null,recordChunks=[],capturePending=false,sound=null,feedCursor=0,feedAt=0,terrainRadius=0,auxLights=[];
@@ -171,7 +171,7 @@
   function updateBridges(){
     for(const {g,a,b} of bridges){let p=a.group.localToWorld(V(L()/2,F,0)),q=b.group.localToWorld(V(-L()/2,F,0));let delta=q.clone().sub(p);g.position.copy(p).lerp(q,.5);g.quaternion.setFromUnitVectors(XAX,delta.clone().normalize());g.scale.x=Math.max(.08,delta.length()+.06);}
   }
-  function resetTake(){state.auto=false;state.time=0;state.s=-3.75;state.z=1.18;state.seated=true;state.seatBlend=1;state.transition=null;state.face=1;state.mode='Seat';state.yaw=0;state.pitch=0;state.orbit=0;state.gait=0;state.events.clear();for(const f of feeds)f.hasFrame=false;state.log=[];if(state.recording)info('record_continued');camP=null;camA=null;camRef=null;if(parallel){parallel.u=phase(trainCars[1].u-.18);parallel.speed=simParams.currentSpeed+1.3;}info('take_reset');}
+  function resetTake(){state.auto=false;state.time=0;state.car=1;state.face=1;state.keys.clear();state.walk=0;feedCursor=0;feedAt=0;state.s=-3.75;state.z=1.18;state.seated=true;state.seatBlend=1;state.transition=null;state.face=1;state.mode='Seat';state.yaw=0;state.pitch=0;state.orbit=0;state.gait=0;state.events.clear();for(const f of feeds)f.hasFrame=false;state.log=[];if(state.recording)info('record_continued');camP=null;camA=null;camRef=null;if(parallel){parallel.u=phase(trainCars[1].u-.18);parallel.speed=simParams.currentSpeed+1.3;}info('take_reset');}
   function mode(name){if(!modes.includes(name))return;state.mode=name;state.yaw=0;state.pitch=0;state.orbit=0;info('camera',{mode:name});}
   function stand(){if(!state.seated||state.transition)return;state.seated=false;state.transition={fromZ:state.z,toZ:0,fromS:state.s,toS:state.s,from:state.seatBlend,to:0,at:state.time};mode('Follow');info('stand');}
   function sit(){if(state.transition)return;if(state.seated){stand();return;}let j=clamp(Math.round(state.s/span()),0,built.length-1),type=built[j].type;if(type!==0&&type!==1){info('sit_unavailable',{reason:'No seats in this carriage'});return;}let pos=type===0?[-3.75,-1.2,1.2,3.75]:[-3.42,-1.88,.93,2.47];let x=state.s-j*span(),near=pos.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a);if(Math.abs(near-x)>1.1){info('sit_unavailable',{reason:'Move closer to a seat'});return;}state.seated=true;state.transition={fromZ:state.z,toZ:1.18,fromS:state.s,toS:j*span()+near,from:state.seatBlend,to:1,at:state.time};mode('Seat');info('sit');}
@@ -187,7 +187,8 @@
     if(t>=23){goal=span();once('parallel_approach',()=>{event('train');event('swarm');mode('Window');});}
     if(t>=28){goal=span()*2;once('greenhouse_walk',()=>mode('Follow'));}
     if(t>=37){goal=span()*3;once('surveillance_walk',()=>mode('Follow'));}
-    if(t>=47){goal=span()*4;once('model_walk',()=>mode('Follow'));}
+    if(t>=44&&t<48){goal=span()*3;once('surveillance_view',()=>mode('Surveillance'));}
+    if(t>=48){goal=span()*4;once('model_walk',()=>mode('Follow'));}
     if(t>=57){goal=span()*4;once('model_view',()=>mode('Model'));}
     if(t>=64){goal=span()*4;once('exterior_view',()=>mode('Exterior'));}
     if(goal!==null&&!state.seated&&!state.transition){let delta=goal-state.s;let d=clamp(delta,-dt*1.65,dt*1.65);state.s+=d;state.gait+=Math.abs(d)*6.6;state.walk=Math.abs(d)>0.002?1:0;}
@@ -218,6 +219,7 @@
     else if(state.mode==='Window'){cp=inside(s-1.1,.55,F+1.55).p;at=localPose(s+.2,-5,F+1.25).p;}
     else if(state.mode==='Exterior'){cp=localPose(s-3.2,-9.6,F+4.6).p;at=localPose(s+.9,0,F+1.5).p;}
     else if(state.mode==='Witness'){cp=localPose((state.car-1)*span()-L()/2+.6,-.8,F+1.78).p;at=aim.p;}
+    else if(state.mode==='Surveillance'){const i=built.findIndex(b=>b.type===3);const ss=Math.max(0,i)*span();cp=inside(ss-1.55,-.82,F+1.75).p;at=localPose(ss+.45,1.10,F+1.62).p;}
     else if(state.mode==='Model'&&mini){cp=localPose((built.length-1)*span()-1.5,-.55,F+2.0).p;at=mini.root.localToWorld(V(0,1.0,0));}
     else{cp=inside(s-face*2.0,clamp(z-.36,-.60,.60),F+1.48).p;at=localPose(s+face*.45,z,F+1.05).p;}
     let look=at.clone().sub(cp);if(state.yaw||state.pitch){look.applyAxisAngle(V(0,1,0),state.yaw);let right=new T.Vector3().crossVectors(look,V(0,1,0)).normalize();if(right.lengthSq()>.1)look.applyAxisAngle(right,state.pitch);at=cp.clone().add(look);}
@@ -285,7 +287,7 @@
   hud.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.mode){state.auto=false;mode(b.dataset.mode);return;}let a=b.dataset.act;if(a==='take')startTake();else if(a==='reset')resetTake();else if(a==='hide')hud.classList.toggle('clean');else if(a==='legacy')setFilm(false);else if(a==='rec')toggleRecord();else if(a==='still')capturePending=true;else if(a==='log')saveLog();else if(a==='sound')toggleSound();else if(a)event(a);});
   for(const b of hud.querySelectorAll('[data-key]')){let k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();state.auto=false;state.keys.add(k);b.setPointerCapture(e.pointerId);});let up=()=>state.keys.delete(k);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);}
   const navKeys=new Set(['w','a','s','d','arrowleft','arrowright','arrowup','arrowdown']);
-  window.addEventListener('keydown',e=>{if(!state.active||e.target?.matches?.('input,textarea,select'))return;let k=e.key.toLowerCase();if(navKeys.has(k)){e.preventDefault();state.auto=false;state.keys.add(k);}else if(!e.repeat){if(k===' '){e.preventDefault();event('sit');}else if(k==='f')event('bee');else if(k==='g')event('scuffle');else if(k==='t')event('train');else if(k==='b')event('swarm');else if(k==='h')hud.classList.toggle('clean');else if(k==='r')toggleRecord();else if(k==='k')capturePending=true;else if(k==='escape'){state.auto=false;hud.classList.remove('clean');}else if(/^[1-7]$/.test(k)){state.auto=false;mode(modes[Number(k)-1]);}}});
+  window.addEventListener('keydown',e=>{if(!state.active||e.target?.matches?.('input,textarea,select'))return;let k=e.key.toLowerCase();if(navKeys.has(k)){e.preventDefault();state.auto=false;state.keys.add(k);}else if(!e.repeat){if(k===' '){e.preventDefault();event('sit');}else if(k==='f')event('bee');else if(k==='g')event('scuffle');else if(k==='t')event('train');else if(k==='b')event('swarm');else if(k==='h')hud.classList.toggle('clean');else if(k==='r')toggleRecord();else if(k==='k')capturePending=true;else if(k==='escape'){state.auto=false;hud.classList.remove('clean');}else if(/^[1-8]$/.test(k)){state.auto=false;mode(modes[Number(k)-1]);}}});
   window.addEventListener('keyup',e=>state.keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>state.keys.clear());
   // Block the old raycast dialogue while filming; its handler is still present in archive mode.
   renderer.domElement.addEventListener('click',e=>{if(state.active){e.stopImmediatePropagation();}},true);
@@ -305,6 +307,6 @@
     if(state.frame%8===0){status.textContent=`${names[(state.car-1)%5]||'Car'} · ${state.mode} · ${state.time.toFixed(1)}s${state.auto?' · DIRECTOR':''}${state.recording?' · ● REC':''}`;for(const b of hud.querySelectorAll('[data-mode]'))b.classList.toggle('on',b.dataset.mode===state.mode);hud.querySelector('[data-act="take"]').textContent=state.auto?'Ⅱ Pause':'▶ Take';hud.querySelector('[data-act="rec"]').classList.toggle('on',state.recording);hud.querySelector('[data-act="sound"]').classList.toggle('on',!!sound);}
   };
   // Explicit application-side control surface for future agent integration. No paid API calls.
-  window.trainFilm={version:'1.1.0',enter:()=>setFilm(true),exit:()=>setFilm(false),take:startTake,reset:resetTake,camera:mode,event,record:toggleRecord,log:()=>state.log.slice(),observe:()=>({active:state.active,t:state.time,car:state.car,mode:state.mode,position:state.s,seated:state.seated,events:[...state.events],recording:state.recording}),hold:(key,ms=500)=>{if(!state.active||!navKeys.has(key))return;state.auto=false;state.keys.add(key);setTimeout(()=>state.keys.delete(key),clamp(ms,0,5000));}};
+  window.trainFilm={version:'1.2.0',enter:()=>setFilm(true),exit:()=>setFilm(false),take:startTake,reset:resetTake,camera:mode,event,record:toggleRecord,log:()=>state.log.slice(),observe:()=>({active:state.active,t:state.time,car:state.car,mode:state.mode,position:state.s,seated:state.seated,events:[...state.events],recording:state.recording}),hold:(key,ms=500)=>{if(!state.active||!navKeys.has(key))return;state.auto=false;state.keys.add(key);setTimeout(()=>state.keys.delete(key),clamp(ms,0,5000));}};
   if(!new URLSearchParams(location.search).has('legacy'))setFilm(true);
 })();

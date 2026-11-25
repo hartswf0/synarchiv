@@ -1,5 +1,7 @@
 # Bees on a Train — the sealed line (`train-brain20.html`)
 
+> This train now also lives in make-photo as the level `train/` ("The Sealed Line"), where it runs on make-photo's cast, joins the overworld at its halts, and has authored camera moves and seeds for world-model takes. New work goes there; this copy is the first version.
+
 A train you can walk through, built to be filmed inside. The locomotive and seven carriages cross a looping
 highland route; each carriage has a threshold that opens onto worlds made from the project's own train footage
 and from generated keyframes. `train-brain19.html` now forwards here (`?legacy` keeps the old simulator,

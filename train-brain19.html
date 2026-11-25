@@ -330,6 +330,10 @@
     </div>
     
     <!-- Three.js Libraries -->
+    <script>
+        // The sealed line moved to train-brain20.html. ?legacy keeps this simulator, ?film19 keeps its first film mode.
+        (function () { var q = new URLSearchParams(location.search); if (!q.has('legacy') && !q.has('film19')) location.replace('train-brain20.html' + location.search); })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     

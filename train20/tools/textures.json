@@ -1,0 +1,6 @@
+{"style":"Flat orthographic front-on texture, evenly lit, no perspective, no vignette, fills the whole frame edge to edge.",
+"jobs":[
+{"id":"tex_panels","prompt":"A wall made of a tight grid of small antique painted wooden beehive front boards (Slovenian panjske koncnice mixed with Ethiopian church painting style): each board a different naive folk painting — saints with large eyes, hunters, a steam train, devils, bears stealing honey, lions, angels, a beekeeper, bees — in faded oxblood red, teal, indigo, ochre and gold on cracked worn wood, thin dark gaps between boards, 6 rows by 10 columns."},
+{"id":"tex_poster","prompt":"A weathered 1970s Ethiopian railway travel poster for a film called BEES ON A TRAIN: bold flat lithograph of a teal and cream train crossing ochre highlands under a huge golden sun made of honeycomb, a swarm of bees forming an arrow, Amharic-style decorative lettering and the words BEES ON A TRAIN, creased paper, faded ink.","aspect":"3:4"},
+{"id":"tex_ticket","prompt":"A wall-size vintage railway route map of an imaginary Ethiopian highland line called THE SEALED LINE, printed in sepia, teal and red on yellowed paper: a single winding line with twelve named stations drawn as hexagons, small engravings of a viaduct, a tunnel, a lake, a beehive tower and a cinema, compass rose, fold creases, brass pins."}
+]}

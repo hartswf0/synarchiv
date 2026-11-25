@@ -1,0 +1,609 @@
+{
+ "note": "World slots for the train. Each carriage owns a threshold that opens onto any of its worlds; a world is an image or a frame of footage with a depth map, so new generations (Atlas, Genie, video) drop in by adding an entry and two files.",
+ "footageBase": "https://hartswf0.github.io/el-desierto/",
+ "cars": {
+  "loco": [
+   "engine",
+   "f1020_steam",
+   "f861_lumiere",
+   "f997_station"
+  ],
+  "quiet": [
+   "f997_window",
+   "quiet",
+   "f997_tunnel",
+   "f997_village",
+   "f997_aerial",
+   "platform"
+  ],
+  "dining": [
+   "f092_dining",
+   "dining",
+   "f1022_sax",
+   "f1022_cliff"
+  ],
+  "greenhouse": [
+   "greenhouse",
+   "f870_field",
+   "hive",
+   "f995_swarm"
+  ],
+  "apiary": [
+   "apiary",
+   "f1022_museum",
+   "f870_hive",
+   "f870_comb",
+   "beecam"
+  ],
+  "mirror": [
+   "f1007_mirror",
+   "mirror",
+   "f1007_arcade",
+   "f1007_corridor",
+   "f1022_corridor"
+  ],
+  "surveillance": [
+   "surveillance",
+   "f995_sealed",
+   "f866_corridor",
+   "f861_corridor"
+  ],
+  "cinema": [
+   "f866_lumiere",
+   "cinema",
+   "f1020_steam",
+   "f1020_platform",
+   "exterior"
+  ]
+ },
+ "screens": [
+  "995_20260427_023029",
+  "861_20260426_235607",
+  "993_20260427_022805",
+  "865_20260427_000101",
+  "997_20260427_023252",
+  "866_20260427_000209"
+ ],
+ "worlds": {
+  "quiet": {
+   "title": "The quiet car",
+   "source": "W-0046 QuietCarNipponSpeedline",
+   "kind": "keyframe",
+   "near": 1.5156,
+   "far": 11.633,
+   "fovY": 61.021,
+   "aspect": 1.77083,
+   "prompt": "Interior of a weathered luxurious 1970s Ethiopian railway passenger carriage seen down the central aisle at eye level, teal painted panelled walls, walnut and brass fittings, oxblood leather bench seats with small tables, warm amber practical lamps, large windows on both sides showing ochre highland mountains in late golden sunlight, dust in the light, a few honeybees in the air, heavy 35mm film grain, technicolor-sepia, cinematic wide shot, no people",
+   "operation": "8f2e6c6e6f7c4244af04e47e9081759b"
+  },
+  "dining": {
+   "title": "The prestige train that feels wrong",
+   "source": "W-0079 ViolinStrings_DiningCar",
+   "kind": "keyframe",
+   "near": 1.249,
+   "far": 11.586,
+   "fovY": 54.192,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Interior of an elegant but weathered railway dining carriage seen down the central aisle at eye level: white linen tables with brass lamps and coffee cups along both window walls, teal panelled walls, walnut and brass trim, oxblood leather chairs, arched cream ceiling with amber dome lamps. A few strangely still passengers in 1970s suits and shawls sit at the tables, backs mostly to camera, a violinist stands at the far end. Large windows show ochre highland mountains at golden hour. A few honeybees drift over the tables.",
+   "operation": "578aff2334054715b373f7c353ab4477"
+  },
+  "greenhouse": {
+   "title": "Greenhouse at the equator",
+   "source": "W-0073 GreenhouseCar_Equator",
+   "kind": "keyframe",
+   "near": 1.2812,
+   "far": 12.047,
+   "fovY": 43.749,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Interior of a railway carriage converted into a greenhouse, seen down the central aisle at eye level: glass roof and glass walls with riveted teal iron ribs, raised planter beds overflowing with coffee shrubs, enset, wild flowers, citrus trees and hanging vines along both sides, wooden beehive boxes among the plants, warm sunlight shafts through steam and pollen, bees in the air, wet plank floor aisle running to a brass-framed door at the far end. Ochre highland mountains visible through the glass.",
+   "operation": "13c5362a5c9d4ee9954f49087b63b84a"
+  },
+  "apiary": {
+   "title": "Museum of painted hive panels",
+   "source": "W-0108 ApiculturalMuseum",
+   "kind": "keyframe",
+   "near": 1.3789,
+   "far": 8.992,
+   "fovY": 64.803,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Interior of a railway carriage that is a museum of beekeeping, seen down the central aisle at eye level: both walls lined floor to ceiling with small painted wooden beehive front panels in folk-art style showing saints, hunters, trains, devils and animals in faded reds, blues and golds, traditional cylindrical woven Ethiopian hives hanging from the arched ceiling, glass vitrines of honeycomb, amber lamps, golden honey light, bees crawling on the panels, a brass-framed door at the far end.",
+   "operation": "4ee75b2272a4490fa251b39546c2ab0c"
+  },
+  "mirror": {
+   "title": "The mirror of the station",
+   "source": "W-0053 / clip 1007",
+   "kind": "keyframe",
+   "near": 1.2285,
+   "far": 10.938,
+   "fovY": 48.269,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. A narrow sleeper-train corridor at night seen at eye level: teal panelled wall with compartment doors on the left, a row of dark windows with rain on the glass on the right, worn red carpet runner, small amber wall sconces. At the far end of the corridor hangs a tall antique gilt-framed mirror that does not reflect this corridor: inside it is a bright Victorian railway carriage of the 1850s with passengers in top hats and crinolines looking out at us. Bees fly between the corridor and the mirror.",
+   "operation": "7a3e652ff3c84eeeb543e12a4f1e813a"
+  },
+  "surveillance": {
+   "title": "Every camera is a drone is a hive",
+   "source": "Genome II \u00b7 Semiotic Surveillance",
+   "kind": "keyframe",
+   "near": 0.9526,
+   "far": 6.016,
+   "fovY": 62.665,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Interior of a windowless railway carriage used as a surveillance room, seen down the central aisle at eye level: both walls stacked with dozens of old CRT monitors and reel-to-reel recorders glowing teal and amber, each screen showing a different grainy view of train corridors, bee swarms, mountain railways and drone footage, bundles of cables on the floor, a single empty swivel chair, a honeycomb pattern of hexagonal screens on the far wall, haze and dust in the monitor light.",
+   "operation": "d45d33b733c2498ab8e27712920d3154"
+  },
+  "cinema": {
+   "title": "Salon Indien on rails",
+   "source": "W-0206 ProjectionScreenCanvas",
+   "kind": "keyframe",
+   "near": 0.9819,
+   "far": 9.711,
+   "fovY": 47.707,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Interior of a railway carriage converted into a tiny cinema, seen from the back row at eye level: rows of worn red velvet seats, a few silhouetted spectators in hats, heavy red curtains framing a glowing screen at the far end that shows a sepia film of a steam train arriving at a station straight toward the camera in 1895, a brass hand-cranked cinematograph projector in the foreground throwing a dusty beam of light, bees crossing the projector beam.",
+   "operation": "1850e1963cc6477889e07c8e3bb93500"
+  },
+  "engine": {
+   "title": "The sacred engine",
+   "source": "W-0063 SacredEngineRoom_Car1",
+   "kind": "keyframe",
+   "near": 2.6562,
+   "far": 8.906,
+   "fovY": 51.873,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Interior of the sacred engine room of an eternal train, seen at eye level: a cathedral-like iron chamber with a colossal brass and copper rotating engine at its centre, concentric gears, pistons and gauges, a ring of golden light, honeycomb-patterned grilles in the walls, steam, oil and candle shrines on the steel walkways, a narrow gantry leading from the camera straight to the engine, bees orbiting the machine like a halo.",
+   "operation": "1e11ffb1841d4349a79395c82c732a8a"
+  },
+  "beecam": {
+   "title": "Through the burned apiary",
+   "source": "Genome III \u00b7 The Apiary Elegy",
+   "kind": "keyframe",
+   "near": 0.4351,
+   "far": 4.926,
+   "fovY": 60.307,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Macro bee-level point of view flying low through the inside of a burned beehive: charred black honeycomb walls like the ruins of a cathedral, melted wax stalactites, a few cells still glowing with amber honey, ash drifting, a ragged opening ahead revealing blue-ochre Ethiopian mountain terrain in hard daylight, a single surviving bee ahead of the camera. Extremely shallow macro perspective, enormous scale.",
+   "operation": "6bef6dac482a4e2bb76087c4b7777ed9"
+  },
+  "hive": {
+   "title": "The impossible hive",
+   "source": "clip 1015 \u00b7 temporal pool",
+   "kind": "keyframe",
+   "near": 2.1855,
+   "far": 130.5,
+   "fovY": 65.572,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. An enormous golden beehive the size of a cathedral standing in a misty highland juniper forest beside a still dark pool, seen from a footpath at eye level: the hive is built of honeycomb and old railway timbers, glowing from within, a narrow-gauge railway track runs from the foreground straight to an arched doorway in its base, the pool reflects a different sky with a train crossing it, swarms spiral around the top, shafts of morning light.",
+   "operation": "abbfe94c1fe04fcc94093d7a0e6132fb"
+  },
+  "exterior": {
+   "title": "The sealed line, from the hillside",
+   "source": "W-0051 ExteriorAerodynamicShell",
+   "kind": "keyframe",
+   "near": 4.6133,
+   "far": 328.0,
+   "fovY": 40.093,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. Exterior wide shot of a long 1970s teal and cream passenger train with a dark diesel locomotive crossing a tall stone viaduct in the Ethiopian highlands at golden hour, seen from a hillside looking along the length of the train as it curves toward the camera: immense ochre and violet mountain ranges, terraced fields, a deep misty valley, acacia trees, dust trailing, a dark swarm of bees flowing alongside the carriages like smoke.",
+   "operation": "676ea26068a44632ae5037835a42ab77"
+  },
+  "platform": {
+   "title": "Amba halt at dawn",
+   "source": "W-0201 TrainCarriageWindowThreshold",
+   "kind": "keyframe",
+   "near": 2.252,
+   "far": 114.062,
+   "fovY": 45.388,
+   "aspect": 1.77083,
+   "prompt": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth. A small highland railway station platform at dawn seen from the open carriage door at eye level: a faded teal and cream station building with a brass clock and a hand-painted Amharic and English sign, benches, stacked wooden crates and beehives waiting for loading, a station master in a long coat holding a lantern, a few passengers wrapped in white shawls, the rails curving away into ochre mountains, long shadows, mist.",
+   "operation": "ab215e06fefc4c01a1fa54c222d2ecd7"
+  },
+  "f997_window": {
+   "title": "Highland noir \u2014 the traveler at the glass",
+   "source": "el-desierto #997",
+   "kind": "footage",
+   "near": 1.4766,
+   "far": 1.747,
+   "fovY": 41.175,
+   "aspect": 0.5625,
+   "clip": "997_20260427_023252",
+   "t": 2.8,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/997_20260427_023252_final.mp4",
+   "operation": "6b914c4878744f5dbba3d195f8dd37ba",
+   "loop": [
+    2.21,
+    3.6
+   ]
+  },
+  "f997_village": {
+   "title": "Highland noir \u2014 what he carries",
+   "source": "el-desierto #997",
+   "kind": "footage",
+   "near": 0.3848,
+   "far": 0.632,
+   "fovY": 34.094,
+   "aspect": 0.5625,
+   "clip": "997_20260427_023252",
+   "t": 5.6,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/997_20260427_023252_final.mp4",
+   "operation": "931d37091b92436483fe061c2dac4e7b",
+   "loop": [
+    5.61,
+    6.5
+   ]
+  },
+  "f997_aerial": {
+   "title": "Highland noir \u2014 train as hive",
+   "source": "el-desierto #997",
+   "kind": "footage",
+   "near": 28.1406,
+   "far": 973.0,
+   "fovY": 41.923,
+   "aspect": 0.5625,
+   "clip": "997_20260427_023252",
+   "t": 0.3,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/997_20260427_023252_final.mp4",
+   "operation": "58e4a8032d5145c69fa0f76bf754a1e9",
+   "loop": [
+    0.08,
+    2.03
+   ]
+  },
+  "f997_station": {
+   "title": "Highland noir \u2014 the ridge at sunset",
+   "source": "el-desierto #997",
+   "kind": "footage",
+   "near": 12.0312,
+   "far": 261.75,
+   "fovY": 46.773,
+   "aspect": 0.5625,
+   "clip": "997_20260427_023252",
+   "t": 7.8,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/997_20260427_023252_final.mp4",
+   "operation": "6f3356f3494c4587a82c4202dcbca539",
+   "loop": [
+    7.38,
+    8.03
+   ]
+  },
+  "f997_tunnel": {
+   "title": "Highland noir \u2014 the halt",
+   "source": "el-desierto #997",
+   "kind": "footage",
+   "near": 0.6655,
+   "far": 1.168,
+   "fovY": 42.712,
+   "aspect": 0.5625,
+   "clip": "997_20260427_023252",
+   "t": 8.9,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/997_20260427_023252_final.mp4",
+   "operation": "cb14456ae1d842ed9c98bd651879d613",
+   "loop": [
+    8.21,
+    9.23
+   ]
+  },
+  "f995_sealed": {
+   "title": "The sealed car",
+   "source": "el-desierto #995",
+   "kind": "footage",
+   "near": 1.8145,
+   "far": 9.867,
+   "fovY": 34.589,
+   "aspect": 0.5625,
+   "clip": "995_20260427_023029",
+   "t": 1.0,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/995_20260427_023029_final.mp4",
+   "operation": "8f5ee6f3bfd146b887e42d58eae6bdd0",
+   "loop": [
+    0.08,
+    2.8
+   ]
+  },
+  "f995_swarm": {
+   "title": "The sealed car \u2014 swarm over the field",
+   "source": "el-desierto #995",
+   "kind": "footage",
+   "near": 1.3242,
+   "far": 1.774,
+   "fovY": 30.959,
+   "aspect": 0.5625,
+   "clip": "995_20260427_023029",
+   "t": 8.0,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v2/995_20260427_023029_final.mp4",
+   "operation": "c5bbd2ffed824e54831d8f9cf00b9e3e",
+   "loop": [
+    6.4,
+    9.8
+   ]
+  },
+  "f1007_corridor": {
+   "title": "Corridor of lamps",
+   "source": "el-desierto #1007",
+   "kind": "footage",
+   "near": 0.7485,
+   "far": 12.867,
+   "fovY": 38.947,
+   "aspect": 0.5625,
+   "clip": "1007_20260427_024406",
+   "t": 2.0,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1007_20260427_024406_final.mp4",
+   "operation": "5118623eb0ee41069851a6a5495fd559",
+   "loop": [
+    1.55,
+    2.87
+   ]
+  },
+  "f1007_mirror": {
+   "title": "The mirror of the station",
+   "source": "el-desierto #1007",
+   "kind": "footage",
+   "near": 0.9897,
+   "far": 1.027,
+   "fovY": 38.275,
+   "aspect": 0.5625,
+   "clip": "1007_20260427_024406",
+   "t": 5.6,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1007_20260427_024406_final.mp4",
+   "operation": "6808989ca7714d9fa2ba381d7be486cb",
+   "loop": [
+    4.55,
+    6.87
+   ]
+  },
+  "f1007_arcade": {
+   "title": "The gaslit arcade inside the mirror",
+   "source": "el-desierto #1007",
+   "kind": "footage",
+   "near": 0.9424,
+   "far": 0.959,
+   "fovY": 43.087,
+   "aspect": 0.5625,
+   "clip": "1007_20260427_024406",
+   "t": 11.4,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1007_20260427_024406_final.mp4",
+   "operation": "8484305b4cb148328a16517cf960d9fd",
+   "loop": [
+    11.15,
+    13.2
+   ]
+  },
+  "f1022_museum": {
+   "title": "Corridor of painted hive panels",
+   "source": "el-desierto #1022",
+   "kind": "footage",
+   "near": 1.4961,
+   "far": 11.93,
+   "fovY": 54.176,
+   "aspect": 0.5625,
+   "clip": "1022_20260427_030205",
+   "t": 2.8,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1022_20260427_030205_final.mp4",
+   "operation": "b20399b01923434a90e21813411c6865",
+   "loop": [
+    2.65,
+    3.6
+   ]
+  },
+  "f1022_corridor": {
+   "title": "The musician walks the corridor",
+   "source": "el-desierto #1022",
+   "kind": "footage",
+   "near": 1.6182,
+   "far": 5.73,
+   "fovY": 33.883,
+   "aspect": 0.5625,
+   "clip": "1022_20260427_030205",
+   "t": 7.6,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1022_20260427_030205_final.mp4",
+   "operation": "d4e90c3321164742ad366227e5445363",
+   "loop": [
+    7.61,
+    8.77
+   ]
+  },
+  "f1022_sax": {
+   "title": "The highland musician",
+   "source": "el-desierto #1022",
+   "kind": "footage",
+   "near": 1.2041,
+   "far": 2.244,
+   "fovY": 40.098,
+   "aspect": 0.5625,
+   "clip": "1022_20260427_030205",
+   "t": 10.4,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1022_20260427_030205_final.mp4",
+   "operation": "b47fad6a1acc4929bac088e35a3f6db8",
+   "loop": [
+    9.85,
+    11.63
+   ]
+  },
+  "f1022_cliff": {
+   "title": "The elevated line",
+   "source": "el-desierto #1022",
+   "kind": "footage",
+   "near": 1.6729,
+   "far": 2.168,
+   "fovY": 39.27,
+   "aspect": 0.5625,
+   "clip": "1022_20260427_030205",
+   "t": 0.1,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1022_20260427_030205_final.mp4",
+   "operation": "f880fac6e3f64e36b47c51b835ddd736",
+   "loop": [
+    0.08,
+    1.03
+   ]
+  },
+  "f870_field": {
+   "title": "The apiary before the fire",
+   "source": "el-desierto #870",
+   "kind": "footage",
+   "near": 18.2188,
+   "far": 1139.0,
+   "fovY": 70.705,
+   "aspect": 0.5625,
+   "clip": "870_20260427_000658",
+   "t": 3.0,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/870_20260427_000658_final.mp4",
+   "operation": "872cf4fc12744022a1730c95b71b9823",
+   "loop": [
+    1.75,
+    4.1
+   ]
+  },
+  "f870_hive": {
+   "title": "Bee cam: inside the burned hive",
+   "source": "el-desierto #870",
+   "kind": "footage",
+   "near": 0.8413,
+   "far": 2.164,
+   "fovY": 36.951,
+   "aspect": 0.5625,
+   "clip": "870_20260427_000658",
+   "t": 4.4,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/870_20260427_000658_final.mp4",
+   "operation": "6ff23f5b7cfc4b11a6e047d238a05276",
+   "loop": [
+    4.28,
+    5.7
+   ]
+  },
+  "f870_comb": {
+   "title": "Bee cam: between the combs",
+   "source": "el-desierto #870",
+   "kind": "footage",
+   "near": 0.3914,
+   "far": 2.768,
+   "fovY": 61.855,
+   "aspect": 0.5625,
+   "clip": "870_20260427_000658",
+   "t": 6.4,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/870_20260427_000658_final.mp4",
+   "operation": "705b670baefa441d95b03ac2157a7e63",
+   "loop": [
+    5.88,
+    8.2
+   ]
+  },
+  "f866_corridor": {
+   "title": "The breached corridor",
+   "source": "el-desierto #866",
+   "kind": "footage",
+   "near": 1.0391,
+   "far": 13.734,
+   "fovY": 55.407,
+   "aspect": 0.5625,
+   "clip": "866_20260427_000209",
+   "t": 5.2,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/866_20260427_000209_final.mp4",
+   "operation": "cb49eddbe810430cb4a5ac309a61c9ed",
+   "loop": [
+    5.25,
+    6.07
+   ]
+  },
+  "f866_lumiere": {
+   "title": "La Ciotat, 1895",
+   "source": "el-desierto #866",
+   "kind": "footage",
+   "near": 3.8242,
+   "far": 23.922,
+   "fovY": 34.47,
+   "aspect": 0.5625,
+   "clip": "866_20260427_000209",
+   "t": 1.7,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/866_20260427_000209_final.mp4",
+   "operation": "d00ce60e35eb498895391b661e85ee81",
+   "loop": [
+    1.68,
+    2.97
+   ]
+  },
+  "f1020_steam": {
+   "title": "The camera that remembers",
+   "source": "el-desierto #1020",
+   "kind": "footage",
+   "near": 3.6133,
+   "far": 133.625,
+   "fovY": 53.523,
+   "aspect": 0.5625,
+   "clip": "1020_20260427_025941",
+   "t": 10.8,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1020_20260427_025941_final.mp4",
+   "operation": "50d032179364417c9bf19293e1390ce6",
+   "loop": [
+    10.51,
+    11.93
+   ]
+  },
+  "f1020_platform": {
+   "title": "Platform at sunset",
+   "source": "el-desierto #1020",
+   "kind": "footage",
+   "near": 2.3867,
+   "far": 45.781,
+   "fovY": 27.511,
+   "aspect": 0.5625,
+   "clip": "1020_20260427_025941",
+   "t": 6.4,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/1020_20260427_025941_final.mp4",
+   "operation": "fde8678b86814123bc6020dd256dde42",
+   "loop": [
+    6.31,
+    7.17
+   ]
+  },
+  "f861_corridor": {
+   "title": "Fluorescent corridor",
+   "source": "el-desierto #861",
+   "kind": "footage",
+   "near": 3.5547,
+   "far": 9.773,
+   "fovY": 34.976,
+   "aspect": 0.5625,
+   "clip": "861_20260426_235607",
+   "t": 8.2,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/861_20260426_235607_final.mp4",
+   "operation": "847b8238742a40f4a6e486693cb7a1a4",
+   "loop": [
+    7.98,
+    10.0
+   ]
+  },
+  "f861_lumiere": {
+   "title": "The arrival of a train",
+   "source": "el-desierto #861",
+   "kind": "footage",
+   "near": 3.6621,
+   "far": 18.969,
+   "fovY": 36.094,
+   "aspect": 0.5625,
+   "clip": "861_20260426_235607",
+   "t": 1.7,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/861_20260426_235607_final.mp4",
+   "operation": "f182ba69637246b99b89190f7519c997",
+   "loop": [
+    1.71,
+    2.27
+   ]
+  },
+  "f092_dining": {
+   "title": "Dining car, unapproved branch",
+   "source": "el-desierto #092",
+   "kind": "footage",
+   "near": 1.126,
+   "far": 27.391,
+   "fovY": 29.321,
+   "aspect": 1.77778,
+   "clip": "092_20260422_055703",
+   "t": 0.5,
+   "final": "https://github.com/hartswf0/el-desierto/releases/download/finals-v1/092_20260422_055703_final.mp4",
+   "operation": "516be4e2c83940e288d9d64af038b055",
+   "loop": [
+    0.08,
+    1.87
+   ]
+  }
+ }
+}

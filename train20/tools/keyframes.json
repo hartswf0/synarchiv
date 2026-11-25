@@ -1,0 +1,62 @@
+{
+ "style": "Film still from a lost 1970s Ethiopian western-noir shot on scratched 35mm: technicolor-sepia dust, imperial gold, teal and indigo shadow, blood red accents, heavy grain, heat shimmer, documentary patience. Deep-focus wide-angle composition with strong depth.",
+ "jobs": [
+  {
+   "id": "quiet",
+   "note": "generated without the shared style line",
+   "prompt": "Interior of a weathered luxurious 1970s Ethiopian railway passenger carriage seen down the central aisle at eye level, teal painted panelled walls, walnut and brass fittings, oxblood leather bench seats with small tables, warm amber practical lamps, large windows on both sides showing ochre highland mountains in late golden sunlight, dust in the light, a few honeybees in the air, heavy 35mm film grain, technicolor-sepia, cinematic wide shot, no people"
+  },
+  {
+   "id": "dining",
+   "prompt": "Interior of an elegant but weathered railway dining carriage seen down the central aisle at eye level: white linen tables with brass lamps and coffee cups along both window walls, teal panelled walls, walnut and brass trim, oxblood leather chairs, arched cream ceiling with amber dome lamps. A few strangely still passengers in 1970s suits and shawls sit at the tables, backs mostly to camera, a violinist stands at the far end. Large windows show ochre highland mountains at golden hour. A few honeybees drift over the tables."
+  },
+  {
+   "id": "greenhouse",
+   "prompt": "Interior of a railway carriage converted into a greenhouse, seen down the central aisle at eye level: glass roof and glass walls with riveted teal iron ribs, raised planter beds overflowing with coffee shrubs, enset, wild flowers, citrus trees and hanging vines along both sides, wooden beehive boxes among the plants, warm sunlight shafts through steam and pollen, bees in the air, wet plank floor aisle running to a brass-framed door at the far end. Ochre highland mountains visible through the glass."
+  },
+  {
+   "id": "apiary",
+   "prompt": "Interior of a railway carriage that is a museum of beekeeping, seen down the central aisle at eye level: both walls lined floor to ceiling with small painted wooden beehive front panels in folk-art style showing saints, hunters, trains, devils and animals in faded reds, blues and golds, traditional cylindrical woven Ethiopian hives hanging from the arched ceiling, glass vitrines of honeycomb, amber lamps, golden honey light, bees crawling on the panels, a brass-framed door at the far end."
+  },
+  {
+   "id": "mirror",
+   "prompt": "A narrow sleeper-train corridor at night seen at eye level: teal panelled wall with compartment doors on the left, a row of dark windows with rain on the glass on the right, worn red carpet runner, small amber wall sconces. At the far end of the corridor hangs a tall antique gilt-framed mirror that does not reflect this corridor: inside it is a bright Victorian railway carriage of the 1850s with passengers in top hats and crinolines looking out at us. Bees fly between the corridor and the mirror."
+  },
+  {
+   "id": "surveillance",
+   "prompt": "Interior of a windowless railway carriage used as a surveillance room, seen down the central aisle at eye level: both walls stacked with dozens of old CRT monitors and reel-to-reel recorders glowing teal and amber, each screen showing a different grainy view of train corridors, bee swarms, mountain railways and drone footage, bundles of cables on the floor, a single empty swivel chair, a honeycomb pattern of hexagonal screens on the far wall, haze and dust in the monitor light."
+  },
+  {
+   "id": "cinema",
+   "prompt": "Interior of a railway carriage converted into a tiny cinema, seen from the back row at eye level: rows of worn red velvet seats, a few silhouetted spectators in hats, heavy red curtains framing a glowing screen at the far end that shows a sepia film of a steam train arriving at a station straight toward the camera in 1895, a brass hand-cranked cinematograph projector in the foreground throwing a dusty beam of light, bees crossing the projector beam."
+  },
+  {
+   "id": "engine",
+   "prompt": "Interior of the sacred engine room of an eternal train, seen at eye level: a cathedral-like iron chamber with a colossal brass and copper rotating engine at its centre, concentric gears, pistons and gauges, a ring of golden light, honeycomb-patterned grilles in the walls, steam, oil and candle shrines on the steel walkways, a narrow gantry leading from the camera straight to the engine, bees orbiting the machine like a halo."
+  },
+  {
+   "id": "beecam",
+   "prompt": "Macro bee-level point of view flying low through the inside of a burned beehive: charred black honeycomb walls like the ruins of a cathedral, melted wax stalactites, a few cells still glowing with amber honey, ash drifting, a ragged opening ahead revealing blue-ochre Ethiopian mountain terrain in hard daylight, a single surviving bee ahead of the camera. Extremely shallow macro perspective, enormous scale."
+  },
+  {
+   "id": "hive",
+   "prompt": "An enormous golden beehive the size of a cathedral standing in a misty highland juniper forest beside a still dark pool, seen from a footpath at eye level: the hive is built of honeycomb and old railway timbers, glowing from within, a narrow-gauge railway track runs from the foreground straight to an arched doorway in its base, the pool reflects a different sky with a train crossing it, swarms spiral around the top, shafts of morning light."
+  },
+  {
+   "id": "exterior",
+   "prompt": "Exterior wide shot of a long 1970s teal and cream passenger train with a dark diesel locomotive crossing a tall stone viaduct in the Ethiopian highlands at golden hour, seen from a hillside looking along the length of the train as it curves toward the camera: immense ochre and violet mountain ranges, terraced fields, a deep misty valley, acacia trees, dust trailing, a dark swarm of bees flowing alongside the carriages like smoke."
+  },
+  {
+   "id": "platform",
+   "prompt": "A small highland railway station platform at dawn seen from the open carriage door at eye level: a faded teal and cream station building with a brass clock and a hand-painted Amharic and English sign, benches, stacked wooden crates and beehives waiting for loading, a station master in a long coat holding a lantern, a few passengers wrapped in white shawls, the rails curving away into ochre mountains, long shadows, mist."
+  },
+  {
+   "id": "panorama_a",
+   "prompt": "Vast empty landscape panorama of the Ethiopian highlands at golden hour seen from a moving train, no train visible, no people: layered ochre and violet mountain ranges receding into haze, flat-topped amba plateaus, terraced fields, scattered acacia and juniper, a distant round stone church on a hill, enormous sky with thin high clouds, horizon exactly in the middle of the frame."
+  },
+  {
+   "id": "panorama_b",
+   "prompt": "Vast empty landscape panorama of a highland salt lake and desert plain at dusk seen from a moving train, no train visible, no people: a still mirror-like lake, pink and indigo sky, distant volcanic cones, a far-off monumental golden beehive-shaped tower on the horizon, dust devils, a line of telegraph poles, horizon exactly in the middle of the frame."
+  }
+ ]
+}

@@ -6,9 +6,9 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
   const R=ctx.renderer, baseRender=ctx.render;
   const libraryURL='train-brain19-worlds.json?v=1';
   const recipes={
-    highland:{title:'Highland Noir',train:true,rooms:['quiet','music','gallery'],theme:'highland',sky:0xc5aa83,ground:0x9b7653,wall:0x4c5147,seat:0x753d32,light:0xffc684,goal:'Ride the highlands and find the musician.'},
-    sealed:{title:'The Sealed Car',train:true,rooms:['quiet','cargo','lab'],theme:'industrial',sky:0x25383e,ground:0x394347,wall:0x24464b,seat:0x2e5a58,light:0x84c8c3,goal:'Find the humming gold crates and examine the swarm.'},
-    prestige:{title:'The Prestige Train',train:true,rooms:['dining','dining','boardroom'],theme:'night',sky:0x141b26,ground:0x28313b,wall:0x492e25,seat:0x71372d,light:0xffc78a,goal:'Observe the uncanny guests without disturbing the meal.'},
+    highland:{title:'Highland Noir',train:true,rooms:['quiet','music','gallery'],theme:'highland',sky:0xc5aa83,ground:0x9b7653,wall:0x4c5147,seat:0x753d32,light:0xffc684,goal:'Ride the highlands and find the musician.',portal:'sealed'},
+    sealed:{title:'The Sealed Car',train:true,rooms:['quiet','cargo','lab'],theme:'industrial',sky:0x25383e,ground:0x394347,wall:0x24464b,seat:0x2e5a58,light:0x84c8c3,goal:'Find the humming gold crates and examine the swarm.',portal:'prestige'},
+    prestige:{title:'The Prestige Train',train:true,rooms:['dining','dining','boardroom'],theme:'night',sky:0x141b26,ground:0x28313b,wall:0x492e25,seat:0x71372d,light:0xffc78a,goal:'Observe the uncanny guests without disturbing the meal.',portal:'mirror'},
     mirror:{title:'Mirror of the Station',train:true,rooms:['vintage','mirror','gallery'],theme:'fog',sky:0x9b8f7a,ground:0x67665b,wall:0x5d422e,seat:0x5c302b,light:0xffcf91,goal:'Follow the bees to the golden doorway into another century.',portal:'victorian'},
     hive:{title:'The Impossible Hive',site:'hive',theme:'forest',sky:0xc2c8a2,ground:0x4b593d,wall:0x9b6d25,light:0xffd47f,goal:'Walk through the honeycomb arches to the pool of tomorrow.',portal:'highland'},
     camera:{title:'The Camera That Remembers',site:'camera',theme:'fog',sky:0xc8b59a,ground:0x776858,wall:0x604934,light:0xffcf91,goal:'Walk from the apparatus room to the Lumière platform.',portal:'victorian'},
@@ -19,7 +19,8 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
     aftermath:{title:'The Apiary After the Fire',site:'apiary',theme:'ash',sky:0xbcb4a4,ground:0x60574e,wall:0x413a31,light:0xf6d9ac,goal:'Walk the rows of burned boxes beside the beekeeper.',portal:'honeyland'},
     victorian:{title:'Victorian Gold / La Ciotat',site:'station',theme:'fog',sky:0xa99b84,ground:0x887760,wall:0x684b37,light:0xffc98a,goal:'Inspect the gaslit platform, gold cargo and a waiting carriage.',portal:'temporal'},
     temporal:{title:'The Temporal Train',train:true,rooms:['vintage','quiet','lab'],theme:'temporal',sky:0xbab0a2,ground:0x77746b,wall:0x544e49,seat:0x6f4139,light:0xe4c59c,goal:'Cross the doors between three architectural eras.',portal:'mirror'},
-    monorail:{title:'The Monochrome Monorail',site:'monorail',theme:'mono',sky:0xb9b9b9,ground:0x666666,wall:0x4c4c4c,light:0xf7f7f7,goal:'Explore the elevated station and observe its train docking.',portal:'standoff'},
+    monorail:{title:'The Monochrome Monorail',site:'monorail',theme:'mono',sky:0xb9b9b9,ground:0x666666,wall:0x4c4c4c,light:0xf7f7f7,goal:'Explore the elevated station and board the moving train.',portal:'monorailride'},
+    monorailride:{title:'Inside the Monochrome Monorail',train:true,rooms:['modern','map','music'],theme:'mono',sky:0xb9b9b9,ground:0x777777,wall:0x505050,seat:0x777777,light:0xf8f8f8,goal:'Ride the elevated line through the canyon and inspect the observation car.',portal:'standoff'},
     standoff:{title:'Monorail Standoff',site:'monorail',theme:'mono',sky:0xa5a5a5,ground:0x5b5b5b,wall:0x404040,light:0xffffff,goal:'Explore the spaceport meeting hall and the canyon overlook.',portal:'monorail'},
     boardroom:{title:'The Tyranny of Plausibility',train:true,rooms:['dining','boardroom','greenhouse'],theme:'night',sky:0x171d28,ground:0x30343f,wall:0x4e3b31,seat:0x73372c,light:0xf5c88c,goal:'Find the living garden beneath the optimized dining experience.',portal:'fork'},
     infinite:{title:'The Infinite Line',train:true,rooms:['modern','map','modern'],theme:'grid',sky:0x1b2833,ground:0x323c48,wall:0x38505b,seat:0x3c6572,light:0xc0d4d5,goal:'Read the repeating timetable and investigate the looping train.',portal:'infinite'},
@@ -143,7 +144,7 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
     }
   }
   function makeTrainWorld(p){
-    let m=world.m,scene=world.scene,root=G(scene),rooms=p.rooms;
+    let m=world.m,scene=world.scene,root=G(scene),rooms=p.rooms;const elevated=p===recipes.monorailride;
     world.train=true;world.trainRoot=root;world.bounds={minX:-5.45,maxX:12*(rooms.length-1)+5.45,minZ:-.48,maxZ:.48};
     rooms.forEach((room,i)=>{let g=trainShell(root,i*12,room);decorateRoom(g,room,i);if(i<rooms.length-1){for(let z of [-.72,.72])B(root,i*12+6,.72,z,.38,1.44,.12,m.metal);B(root,i*12+6,2.5,0,.38,.18,1.55,m.metal);}});
     world.start=V(-3.98,0,1.15);world.startSeat=['quiet','vintage','modern'].includes(rooms[0]);if(!world.startSeat)world.start.set(-4.65,0,0);
@@ -151,9 +152,9 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
     if(p.portal){let last=12*(rooms.length-1);portal(root,last+4.7,-1.55,p.portal,recipes[p.portal].title);}
     // A continuous train-relative landscape. Each tile has persistent geometry and repeats only offscreen.
     world.scroll=[];let rng=randFactory(1228),tileLength=64;
-    for(let n=0;n<7;n++){let g=G(scene,(n-3)*tileLength,-.65,0);B(g,0,-.10,0,tileLength,.18,170,m.earth);
-      for(let z of [-1.45,1.45,-6.8,-9.6])B(g,0,.12,z,tileLength,.12,.11,m.metal);
-      let sleepers=new T.InstancedMesh(geometry('BoxGeometry',[.29,.15,3.6]),m.wood,64),mx=new T.Matrix4(),si=0;for(let i=0;i<32;i++)for(let z of [0,-8.2])sleepers.setMatrixAt(si++,mx.makeTranslation(-31+i*2,.03,z));g.add(sleepers);
+    for(let n=0;n<7;n++){let g=G(scene,(n-3)*tileLength,-.65,0);B(g,0,elevated?-6.9:-.10,0,tileLength,.18,170,m.earth);if(elevated){B(g,0,-.48,0,tileLength,.65,3.4,m.metal);for(let j=0;j<8;j++)B(g,-28+j*8,-3.6,0,.7,6.0,.7,m.metal);}
+      for(let z of elevated?[0]:[-1.45,1.45,-6.8,-9.6])B(g,0,.12,z,tileLength,.12,.11,m.metal);
+      if(!elevated){let sleepers=new T.InstancedMesh(geometry('BoxGeometry',[.29,.15,3.6]),m.wood,64),mx=new T.Matrix4(),si=0;for(let i=0;i<32;i++)for(let z of [0,-8.2])sleepers.setMatrixAt(si++,mx.makeTranslation(-31+i*2,.03,z));g.add(sleepers);}
       for(let side of [-1,1])for(let j=0;j<5;j++){let x=-30+j*13+(rng()-.5)*5,z=side*(19+rng()*48),h=6+rng()*18;
         if(['industrial','grid','night'].includes(p.theme)){let b=B(g,x,h/2,z,6+rng()*5,h,7+rng()*6,m.wall);for(let y=1.5;y<h;y+=2.6)for(let xx=-2;xx<=2;xx+=2)B(g,x+xx,y,z-side*3.53,.75,.65,.03,m.lamp);}
         else{let mountain=C(g,x,h*.39,z,2+rng()*3,7+rng()*9,h,m.earth,5);mountain.rotation.y=rng()*Math.PI;mountain.scale.z=1.2;}
@@ -162,7 +163,7 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
       if(n%2===0){for(let j=0;j<4;j++){let x=-10+j*4,z=14;B(g,x,.9,z,2.6,1.8,2.3,m.cream);let roof=C(g,x,2.3,z,.05,1.9,1.1,m.wood,4);roof.rotation.y=Math.PI/4;}for(let j=0;j<5;j++)B(g,-14+j*1.5,.55,-15,1.05,.9,.8,m.wood);}
       world.scroll.push(g);
     }
-    let parallel=G(scene,-36,-.48,-8.2);for(let i=0;i<4;i++)railcar(parallel,-i*8.3,0,8,'steel',2.8);world.parallel=parallel;
+    let parallel=G(scene,-36,elevated?-6.9:-.48,-8.2);for(let i=0;i<4;i++)railcar(parallel,-i*8.3,0,8,'steel',2.8);world.parallel=parallel;
     world.parallelStart=-43;world.parallelSpeed=3.2;
   }
   function flatSite(p,bounds,groundY=0){world.bounds=bounds;world.start=V(bounds.minX+2,0,0);world.startSeat=false;world.startFace=1;B(world.scene,(bounds.minX+bounds.maxX)/2,groundY-.12,(bounds.minZ+bounds.maxZ)/2,bounds.maxX-bounds.minX+5,.24,bounds.maxZ-bounds.minZ+5,world.m.earth);}
@@ -207,10 +208,10 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
     for(let x of [-5,0,7,13])addPerson(s,x,2.3,{coat:x%2?m.white:m.dark,kind:'idle',hat:!raised});
     for(let x of [-7,-5.5,-4]){B(s,x,.34,-2.5,1.22,.68,.8,m.wood);for(let j=0;j<3;j++)B(s,x+(j-1)*.31,.76,-2.5,.27,.14,.43,m.brass);block(x,-2.5,1.22,.8);}
     if(p===recipes.wax)addPerson(s,8,2.5,{coat:m.cream,instrument:true,kind:'music'});
-    if(p===recipes.standoff){for(let x of [-2,5,12]){table(s,x,1.3,1.3,.8);chair(s,x,-.3,1);addPerson(s,x,1.95,{coat:m.white,kind:'idle'});}}
+    if(p===recipes.standoff){for(let x of [-2,5,12]){table(s,x,1.6,1.3,.8);chair(s,x,2.55,1);addPerson(s,x,2.55,{coat:m.white,kind:'idle',sit:true});}}
     let passing=G(s,-40,0,-6);for(let k=0;k<4;k++)railcar(passing,-k*8.1,0,8,raised?'steel':'wood',2.8);world.stationTrain=passing;
     if(raised){let lift=G(s,18,0,3.6);for(let x of [-.7,.7])for(let z of [-.7,.7])B(lift,x,1.4,z,.08,2.8,.08,m.metal);B(lift,0,.06,0,1.5,.12,1.5,m.brass);B(lift,0,2.85,0,1.5,.14,1.5,m.metal);B(lift,0,1.4,.75,1.4,2.6,.035,m.glass);pushInteraction(s,18,3.6,'Call the glass lift',()=>{note('Lift called; the visible lift car descends toward the plain.');world.liftAt=time;},2.2);world.lift=lift;}
-    portal(s,20,0,p.portal||'temporal',raised?'NEXT LINE':'BOARD THE TRAIN',-Math.PI/2);world.start=V(-11,0,0);route=[V(-4,0,0),V(3,0,0),V(11,0,0),V(18,0,0)];
+    portal(s,20,0,p.portal||'temporal',raised?'BOARD MONORAIL':'BOARD THE TRAIN',-Math.PI/2);world.start=V(-11,0,0);route=[V(-4,0,0),V(3,0,0),V(11,0,0),V(18,0,0)];
   }
   function makeCamera(p){
     let m=world.m,s=world.scene;flatSite(p,{minX:-12,maxX:22,minZ:-4.4,maxZ:4.4});siteBackdrop(s,p.theme);wallRoom(s,-6,0,12,8.5,true);
@@ -238,7 +239,7 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
     portal(s,17,-5,'camera','CINEMA',-Math.PI/2);portal(s,17,5,'hive','HIVE',-Math.PI/2);world.start=V(-10,0,0);route=[V(-3,0,0),V(3,0,0),V(9,0,-2),V(15,0,-5)];
   }
   function disposeWorld(){if(!world)return;world.feeds.forEach(f=>f.rt.dispose());world.textures.forEach(t=>t.dispose());let used=new Set();world.scene.traverse(o=>{if(o.material){for(let m of Array.isArray(o.material)?o.material:[o.material])used.add(m);}});for(let m of used){if(!ctx.isSharedMaterial?.(m))m.dispose();}world=null;}
-  function sourceFor(recipe){return db?.clips.find(x=>x.recipe===recipe)||db?.worlds.find(x=>x.recipe===recipe)||{id:'recipe:'+recipe,title:recipes[recipe]?.title||recipe,kind:'recipe',recipe};}
+  function sourceFor(recipe){if(recipe==='monorailride'){let x=db?.clips.find(x=>x.recipe==='monorail');if(x)return {...x,title:'Inside the Monochrome Monorail',recipe:'monorailride'};}return db?.clips.find(x=>x.recipe===recipe)||db?.worlds.find(x=>x.recipe===recipe)||{id:'recipe:'+recipe,title:recipes[recipe]?.title||recipe,kind:'recipe',recipe};}
   function note(s){interactNote=s;interactUntil=time+4;logEvent('note',{text:s});}
   function logEvent(event,detail={}){log.push({t:+time.toFixed(3),source:currentSource?.id,event,...detail});if(log.length>1000)log.shift();}
   function enterRecipe(recipe,source,template=false,portalTravel=false){
@@ -366,6 +367,6 @@ window.TrainArchiveWorlds=(function archiveWorlds(ctx) {
   for(let b of gameHUD.querySelectorAll('[data-key]')){let key=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys.add(key);autoplay=false;b.setPointerCapture?.(e.pointerId);});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(key));}
   window.addEventListener('keydown',e=>{if(!active||visibleLibrary||e.target?.matches?.('input,select,textarea'))return;let k=e.key.toLowerCase();if(navKeys.has(k)){e.preventDefault();keys.add(k);autoplay=false;}else if(!e.repeat){if(k===' ') {e.preventDefault();toggleSeat();}else if(k==='e')interact();else if(k==='c')cycle();else if(k==='f')fire('bee');else if(k==='g')fire('event');else if(k==='r')toggleRecord();else if(k==='k')stillPending=true;else if(k==='h')fire('hud');else if(k==='escape')open();else if(/^[1-7]$/.test(k)){cameraMode=cameraModes[Number(k)-1];yaw=pitch=0;}}});
   window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());R.domElement.addEventListener('pointerdown',e=>{if(!active||visibleLibrary)return;drag={x:e.clientX,y:e.clientY};R.domElement.setPointerCapture?.(e.pointerId);});R.domElement.addEventListener('pointermove',e=>{if(!drag||!active||visibleLibrary)return;yaw=clamp(yaw-(e.clientX-drag.x)*.005,-Math.PI,Math.PI);pitch=clamp(pitch-(e.clientY-drag.y)*.004,-.9,.9);drag={x:e.clientX,y:e.clientY};});for(let ev of ['pointerup','pointercancel','lostpointercapture'])R.domElement.addEventListener(ev,()=>drag=null);
-  const api={version:'2.0.0',get active(){return active;},get libraryOpen(){return visibleLibrary;},open,close:closeLibrary,exit,frame,recipes,load,enter:(id,override)=>load().then(()=>{let r=[...db.clips,...db.worlds].find(x=>x.id===id);if(!r)throw Error('Unknown source '+id);let k=override||r.recipe||r.template||'highland';enterRecipe(k,r,!r.recipe||r.recipe!==k);}),enterRecipe:(k)=>enterRecipe(k,sourceFor(k)),observe:()=>({active,source:currentSource?.id,recipe:Object.keys(recipes).find(k=>recipes[k]===currentRecipe),position:world?.position?.toArray(),time,camera:cameraMode,autoplay,recording,entities:world?{people:world.people.length+1,bees:world.bees.length,rooms:world.rooms.map(x=>x.name)}:null}),action:fire,log:()=>log.slice(),hold:(key,ms=500)=>{if(!navKeys.has(key)||!active)return;keys.add(key);setTimeout(()=>keys.delete(key),clamp(ms,0,5000));},setCamera:(name)=>{if(cameraModes.includes(name)){cameraMode=name;yaw=pitch=0;logEvent('camera',{mode:name});}}};
+  const api={version:'2.0.1',get active(){return active;},get libraryOpen(){return visibleLibrary;},open,close:closeLibrary,exit,frame,recipes,load,enter:(id,override)=>load().then(()=>{let r=[...db.clips,...db.worlds].find(x=>x.id===id);if(!r)throw Error('Unknown source '+id);let k=override||r.recipe||r.template||'highland';enterRecipe(k,r,!r.recipe||r.recipe!==k);}),enterRecipe:(k)=>enterRecipe(k,sourceFor(k)),observe:()=>({active,source:currentSource?.id,recipe:Object.keys(recipes).find(k=>recipes[k]===currentRecipe),position:world?.position?.toArray(),time,camera:cameraMode,autoplay,recording,entities:world?{people:world.people.length+1,bees:world.bees.length,rooms:world.rooms.map(x=>x.name)}:null}),action:fire,log:()=>log.slice(),hold:(key,ms=500)=>{if(!navKeys.has(key)||!active)return;keys.add(key);setTimeout(()=>keys.delete(key),clamp(ms,0,5000));},setCamera:(name)=>{if(cameraModes.includes(name)){cameraMode=name;yaw=pitch=0;logEvent('camera',{mode:name});}}};
   return api;
 });

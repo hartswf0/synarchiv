@@ -6,8 +6,8 @@
   const T=THREE, V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z), clamp=T.MathUtils.clamp;
   const F=.94, H=2.75, W=1.83, XAX=V(1,0,0), modes=['Seat','Follow','Orbit','Window','Exterior','Witness','Model'];
   const names=['Quiet car','Dining car','Greenhouse','Surveillance','World within a world'];
-  const state={active:false,auto:false,time:0,s:-2.6,z:1.04,seated:true,face:1,mode:'Seat',yaw:0,pitch:0,orbit:0,gait:0,events:new Set(),log:[],car:1,keys:new Set(),recording:false,frame:0};
-  let landscape,hidden=[],extra=[],built=[],bridges=[],actor,parallel,mini,feeds=[],last=performance.now(),camP,camA,legacy,record=null,recordChunks=[],capturePending=false,sound=null,feedCursor=0,feedAt=0,terrainRadius=0,auxLights=[];
+  const state={active:false,auto:false,time:0,s:-3.75,z:1.18,seated:true,seatBlend:1,transition:null,face:1,mode:'Seat',yaw:0,pitch:0,orbit:0,gait:0,events:new Set(),log:[],car:1,keys:new Set(),recording:false,frame:0};
+  let landscape,hidden=[],extra=[],built=[],bridges=[],actor,parallel,mini,feeds=[],last=performance.now(),camP,camA,camRef,legacy,record=null,recordChunks=[],capturePending=false,sound=null,feedCursor=0,feedAt=0,terrainRadius=0,auxLights=[];
   const baseRender=renderer.render.bind(renderer);
   const palette={wood:0x654231,walnut:0x35271f,cream:0xb59b75,brass:0xb98a43,teal:0x28474b,seat:0x793a36,iron:0x252c30,glass:0x9cb7ac,black:0x171a1c,skin:0x80503b,coat:0x74513b,red:0x742b29};
   const mats={};
@@ -48,9 +48,9 @@
     return {root,body,legs,knees,arms,brief};
   }
   function pose(person,sitting,walk=0,gait=0,gesture=0){
-    person.body.position.y=sitting?.49:.88;
-    for(let i=0;i<2;i++){const a=Math.sin(gait+(i?Math.PI:0))*walk*.56;person.legs[i].position.y=sitting?.49:.88;person.legs[i].rotation.z=sitting?1.48:a;person.knees[i].rotation.z=sitting?-1.48:-Math.max(0,-a)*.8;person.arms[i].rotation.z=sitting?.82:-a*.75+gesture*(i?1:-.7);}
-    person.brief.rotation.z=sitting?-.82:.03;
+    person.body.position.y=.88-.39*Number(sitting);
+    for(let i=0;i<2;i++){const a=Math.sin(gait+(i?Math.PI:0))*walk*.56;person.legs[i].position.y=.88-.39*Number(sitting);person.legs[i].rotation.z=a*(1-Number(sitting))+1.48*Number(sitting);person.knees[i].rotation.z=-1.48*Number(sitting)-Math.max(0,-a)*.8*(1-Number(sitting));person.arms[i].rotation.z=.82*Number(sitting)-a*.75*(1-Number(sitting))+gesture*(i?1:-.7);}
+    person.brief.rotation.z=.03-.85*Number(sitting);
   }
   function seat(p,x,z,dir){let g=group(p,x,F,z);box(g,0,.24,0,.65,.47,.66,m.wood);box(g,0,.50,0,.72,.14,.72,m.seat);box(g,-dir*.32,.83,0,.14,.73,.73,m.seat);box(g,0,.65,-.35,.55,.09,.075,m.brass);box(g,0,.65,.35,.55,.09,.075,m.brass);return g;}
   function table(p,x,z){box(p,x,F+.73,z,.85,.075,.64,m.wood);cyl(p,x,F+.36,z,.075,.10,.68,m.brass);return group(p,x,F+.78,z);}
@@ -87,7 +87,7 @@
     box(p,0,F+.012,0,L()-.2,.025,.86,m.seat);
     for(const z of [-.43,.43])box(p,0,F+.027,z,L()-.2,.014,.025,m.brass);
     if(type===0){
-      for(const z of [-1.18,1.18])for(const x of [-3.75,-1.2,1.2,3.75])seat(p,x,z,x<0?1:-1);
+      for(const z of [-1.18,1.18])for(const x of [-3.75,-1.2,1.2,3.75])seat(p,x,z,x<0?1:-1);for(const z of [-W+.12,W-.12])for(const x of [-4.65,-2.65,-.65,1.35,3.35]){box(p,x,F+1.77,z,.27,1.38,.045,m.seat);box(p,x+.03,F+2.48,z,.35,.07,.075,m.brass);}
       let tb=table(p,-2.48,1.15);cup(tb,.12,.03);data.props.cup=tb;
       let a=makePerson(p,{coat:m.teal,hat:false});a.root.position.set(-1.2,F,-1.18);a.root.rotation.y=Math.PI;pose(a,true);data.people.push(a);
       let b=makePerson(p,{coat:m.iron});b.root.position.set(3.75,F,1.18);b.root.rotation.y=Math.PI;pose(b,true);data.people.push(b);
@@ -110,7 +110,7 @@
       let keeper=makePerson(p,{coat:m.cream,hat:false});keeper.root.position.set(2.8,F,-1.1);keeper.root.rotation.y=-Math.PI/2;pose(keeper,false);data.people.push(keeper);
     } else if(type===3){
       const desk=group(p,0,F,1.14);box(desk,0,.40,0,5.6,.80,.70,m.walnut);
-      data.props.screenGroup=group(desk);for(let k=0;k<4;k++){let x=-1.95+k*1.3;box(desk,x,1.39,0,1.22,.82,.18,m.iron);let rt=new T.WebGLRenderTarget(320,180,{minFilter:T.LinearFilter,magFilter:T.LinearFilter});let scr=mesh(data.props.screenGroup,geom('PlaneGeometry',[1.10,.66]),new T.MeshBasicMaterial({map:rt.texture}),x,1.39,-.105);scr.rotation.y=Math.PI;feeds.push({rt,screen:scr,target:k});}
+      data.props.screenGroup=group(desk);for(let k=0;k<4;k++){let x=-1.95+k*1.3;box(desk,x,1.39,0,1.22,.82,.18,m.iron);let rt=new T.WebGLRenderTarget(320,180,{minFilter:T.LinearFilter,magFilter:T.LinearFilter});let scr=mesh(data.props.screenGroup,geom('PlaneGeometry',[1.10,.66]),new T.MeshBasicMaterial({map:rt.texture}),x,1.39,-.105);scr.rotation.y=Math.PI;feeds.push({rt,screen:scr,target:k});makeLabel(desk,['EXTERIOR','EARLIER / QUIET','DINING','GREENHOUSE'][k],x,1.88,-.13,Math.PI,.83);}
       for(let i=0;i<12;i++)box(desk,-2.5+i*.45,.84,-.20,.1,.04,.12,i%3===0?m.lamp:m.brass);
       let a=makePerson(p,{coat:m.teal,hat:false});a.root.position.set(.7,F,.6);a.root.rotation.y=-Math.PI/2;pose(a,true);data.people.push(a);
       // Painted hive panels are physical objects opposite the surveillance wall.
@@ -152,7 +152,7 @@
     // Parallel railway, already present in the landscape.
     const rr=Math.max(12,r-7);
     for(const o of [-1.22,1.22]){let rail=mesh(landscape,geom('TorusGeometry',[rr+o,.07,6,180]),m.iron,0,.19,0);rail.rotation.x=Math.PI/2;}
-    parallel={root:group(landscape),u:.62,speed:simParams.currentSpeed+1.3,r:rr,cars:[]};
+    parallel={root:group(landscape),u:.62,speed:simParams.currentSpeed+1.3,r:rr,cars:[],swarm:[]};for(let i=0;i<16;i++){let b=bee(landscape,.105);b.g.visible=false;parallel.swarm.push(b);}
     for(let k=0;k<4;k++){let q=group(parallel.root);box(q,0,.69,0,5.2,.38,2.4,m.iron);box(q,0,1.72,0,5.1,1.85,2.25,k===0?m.iron:m.wood);box(q,0,2.72,0,5.15,.21,2.32,m.walnut);for(const z of [-1.14,1.14])for(let a=0;a<4;a++)box(q,-1.8+a*1.2,1.95,z,.71,.77,.035,m.lamp);for(const x of [-1.65,1.65])for(const z of [-1.02,1.02]){let w=cyl(q,x,.39,z,.38,.38,.15,m.iron);w.rotation.x=Math.PI/2;}if(k===0){cyl(q,1.6,3,0,.27,.38,.76,m.iron);}parallel.cars.push(q);}
   }
   function localPose(s,z,y){
@@ -169,10 +169,12 @@
   function updateBridges(){
     for(const {g,a,b} of bridges){let p=a.group.localToWorld(V(L()/2,F,0)),q=b.group.localToWorld(V(-L()/2,F,0));let delta=q.clone().sub(p);g.position.copy(p).lerp(q,.5);g.quaternion.setFromUnitVectors(XAX,delta.clone().normalize());g.scale.x=Math.max(.08,delta.length()+.06);}
   }
-  function resetTake(){state.auto=false;state.time=0;state.s=-2.6;state.z=1.04;state.seated=true;state.face=1;state.mode='Seat';state.yaw=0;state.pitch=0;state.orbit=0;state.gait=0;state.events.clear();state.log=[];camP=null;camA=null;if(parallel){parallel.u=phase(trainCars[1].u-.18);parallel.speed=simParams.currentSpeed+1.3;}info('take_reset');}
+  function resetTake(){state.auto=false;state.time=0;state.s=-3.75;state.z=1.18;state.seated=true;state.seatBlend=1;state.transition=null;state.face=1;state.mode='Seat';state.yaw=0;state.pitch=0;state.orbit=0;state.gait=0;state.events.clear();for(const f of feeds)f.hasFrame=false;state.log=[];if(state.recording)info('record_continued');camP=null;camA=null;camRef=null;if(parallel){parallel.u=phase(trainCars[1].u-.18);parallel.speed=simParams.currentSpeed+1.3;}info('take_reset');}
   function mode(name){if(!modes.includes(name))return;state.mode=name;state.yaw=0;state.pitch=0;state.orbit=0;info('camera',{mode:name});}
-  function stand(){if(!state.seated)return;state.seated=false;state.z=0;mode('Follow');info('stand');}
-  function event(name){if(name==='bee'){once('bee',()=>{state.beeAt=state.time;});}else if(name==='train'){once('parallel_train',()=>{parallel.speed=simParams.currentSpeed+4;});}else if(name==='scuffle'){once('scuffle',()=>{state.fightAt=state.time;});}else if(name==='sit'){if(state.seated)stand();else{state.seated=true;mode('Seat');info('sit');}}}
+  function stand(){if(!state.seated||state.transition)return;state.seated=false;state.transition={fromZ:state.z,toZ:0,fromS:state.s,toS:state.s,from:state.seatBlend,to:0,at:state.time};mode('Follow');info('stand');}
+  function sit(){if(state.transition)return;if(state.seated){stand();return;}let j=clamp(Math.round(state.s/span()),0,built.length-1),type=built[j].type;if(type!==0&&type!==1){info('sit_unavailable',{reason:'No seats in this carriage'});return;}let pos=type===0?[-3.75,-1.2,1.2,3.75]:[-3.42,-1.88,.93,2.47];let x=state.s-j*span(),near=pos.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a);if(Math.abs(near-x)>1.1){info('sit_unavailable',{reason:'Move closer to a seat'});return;}state.seated=true;state.transition={fromZ:state.z,toZ:1.18,fromS:state.s,toS:j*span()+near,from:state.seatBlend,to:1,at:state.time};mode('Seat');info('sit');}
+  function updateSeat(){let a=state.transition;if(!a)return;let t=clamp((state.time-a.at)/.85,0,1),q=t*t*(3-2*t);state.z=a.fromZ+(a.toZ-a.fromZ)*q;state.s=a.fromS+(a.toS-a.fromS)*q;state.seatBlend=a.from+(a.to-a.from)*q;if(t>=1)state.transition=null;}
+  function event(name){if(name==='bee'){once('bee',()=>{state.beeAt=state.time;});}else if(name==='train'){once('parallel_train',()=>{parallel.speed=simParams.currentSpeed+4;});}else if(name==='scuffle'){once('scuffle',()=>{state.fightAt=state.time;});}else if(name==='swarm'){once('exterior_swarm',()=>{state.swarmAt=state.time;});}else if(name==='sit'){sit();}}
   function director(dt){
     if(!state.auto)return;
     let t=state.time,goal=null;
@@ -180,55 +182,55 @@
     if(t>=5)once('orbit_start',()=>mode('Orbit'));
     if(t>=10){once('stand_directed',stand);goal=span();}
     if(t>=18){goal=span();once('dining_arrival',()=>{mode('Follow');event('scuffle');});}
-    if(t>=23){goal=span();once('parallel_approach',()=>{event('train');mode('Window');});}
+    if(t>=23){goal=span();once('parallel_approach',()=>{event('train');event('swarm');mode('Window');});}
     if(t>=28){goal=span()*2;once('greenhouse_walk',()=>mode('Follow'));}
     if(t>=37){goal=span()*3;once('surveillance_walk',()=>mode('Follow'));}
     if(t>=47){goal=span()*4;once('model_walk',()=>mode('Follow'));}
     if(t>=57){goal=span()*4;once('model_view',()=>mode('Model'));}
     if(t>=64){goal=span()*4;once('exterior_view',()=>mode('Exterior'));}
-    if(goal!==null&&!state.seated){let delta=goal-state.s;let d=clamp(delta,-dt*1.65,dt*1.65);state.s+=d;state.gait+=Math.abs(d)*6.6;state.walk=Math.abs(d)>0.002?1:0;}
+    if(goal!==null&&!state.seated&&!state.transition){let delta=goal-state.s;let d=clamp(delta,-dt*1.65,dt*1.65);state.s+=d;state.gait+=Math.abs(d)*6.6;state.walk=Math.abs(d)>0.002?1:0;}
     if(t>=72){state.auto=false;info('take_complete');if(state.recording)stopRecord();}
   }
   function manual(dt){
     if(state.auto)return;
     const k=state.keys;let d=(k.has('w')?1:0)-(k.has('s')?1:0),side=(k.has('d')?1:0)-(k.has('a')?1:0);
-    if(d||side){stand();if(state.mode==='Seat')mode('Follow');let prev=state.s;state.s=clamp(state.s+d*dt*1.7,-L()/2+.72,(built.length-1)*span()+L()/2-.72);state.z=clamp(state.z+side*dt*.85,-.40,.40);state.gait+=(Math.abs(state.s-prev)+Math.abs(side)*dt*.85)*6.6;state.walk=1;if(d)state.face=d;}else state.walk=0;
+    if(d||side){stand();if(state.transition){state.walk=0;return;}if(state.mode==='Seat')mode('Follow');let prev=state.s;state.s=clamp(state.s+d*dt*1.7,-L()/2+.72,(built.length-1)*span()+L()/2-.72);state.z=clamp(state.z+side*dt*.85,-.40,.40);state.gait+=(Math.abs(state.s-prev)+Math.abs(side)*dt*.85)*6.6;state.walk=1;if(d)state.face=d;}else state.walk=0;
     state.yaw=clamp(state.yaw+((k.has('arrowleft')?1:0)-(k.has('arrowright')?1:0))*dt*1.1,-1.45,1.45);
     state.pitch=clamp(state.pitch+((k.has('arrowup')?1:0)-(k.has('arrowdown')?1:0))*dt*.85,-.9,.9);
   }
   function updateActors(dt){
-    const p=localPose(state.s,state.z,F);state.car=p.j;actor.root.position.copy(p.p);actor.root.quaternion.copy(p.q);actor.root.rotateY(state.seated?Math.PI:state.face===1?0:Math.PI);
-    pose(actor,state.seated,state.walk||0,state.gait);
+    const p=localPose(state.s,state.z,F);state.car=p.j;actor.root.position.copy(p.p);actor.root.quaternion.copy(p.q);actor.root.rotateY(state.seated?0:state.face===1?0:Math.PI);
+    pose(actor,state.seatBlend,state.walk||0,state.gait);actor.root.updateMatrixWorld(true);
     for(const b of built){let t=state.time;if(b.type===0){let c=b.props.cart;c.position.x=2.8-.9*(1-Math.cos(t*.45));let q=b.bees[0];let v=state.events.has('bee')?clamp((t-state.beeAt)/2.3,0,1):0;
-      q.g.position.set(-3.8+1.05*v,F+1.4-.26*v+Math.sin(t*7)*.035*(1-v),1.35-.30*v);q.g.rotation.y=t*2;q.wings.forEach((w,i)=>w.rotation.x=Math.sin(t*90)*(i?1:-1));
+      let src=V(-3.8,F+1.65,1.55);if(state.car===1&&state.seatBlend>.5){b.props.beeTarget=b.p.worldToLocal(actor.brief.getWorldPosition(V())).add(V(.02,.14,0));}let dst=b.props.beeTarget||V(-3.5,F+.92,1.15);q.g.position.copy(src).lerp(dst,v);q.g.position.y+=Math.sin(t*7)*.045*(1-v);q.g.rotation.y=v>=1?0:t*2;q.wings.forEach((w,i)=>w.rotation.x=Math.sin(t*90)*(i?1:-1));
     }else if(b.type===1){let a=b.people[0];pose(a,false,0,0,.18*Math.sin(t*5));for(let i=1;i<3;i++){let q=b.people[i];let fight=state.events.has('scuffle')&&t-state.fightAt<7;pose(q,false,0,0,fight?.9*Math.sin(t*8+i):.12*Math.sin(t*2+i));q.root.position.x=(i===1?-.5:.2)+(fight?.15*Math.sin(t*5+i):0);}b.props.fish.forEach((q,i)=>{q.position.x=.46*Math.sin(t*.9+i*1.6);q.position.y=1+.12*Math.sin(t*1.2+i);q.position.z=.18*Math.cos(t*.8+i);});
     }else if(b.type===2){b.bees.forEach((q,i)=>{q.g.position.set(3.6*Math.sin(t*.42+i*.9),F+.86+.48*Math.sin(t*1.8+i),1.1*Math.cos(t*.72+i*2.2));q.g.rotation.y=t+i;q.wings.forEach((w,j)=>w.rotation.x=Math.sin(t*85+i)*(j?1:-1));});}}
-    if(parallel){parallel.u=phase(parallel.u+parallel.speed*dt/(Math.PI*2*parallel.r));parallel.cars.forEach((q,i)=>{let a=2*Math.PI*phase(parallel.u-i*6/(Math.PI*2*parallel.r));q.position.set(Math.cos(a)*parallel.r,.15,Math.sin(a)*parallel.r);q.rotation.y=-a-Math.PI/2;});}
-    if(mini){mini.parts.forEach((q,i)=>{let a=2*Math.PI*phase(trainCurrentU-i*.034);q.position.set(.49*Math.cos(a),1.085,.49*Math.sin(a));q.rotation.y=-a-Math.PI/2;});}
+    if(parallel){parallel.u=phase(parallel.u+parallel.speed*dt/(Math.PI*2*parallel.r));parallel.cars.forEach((q,i)=>{let a=2*Math.PI*phase(parallel.u-i*6/(Math.PI*2*parallel.r));q.position.set(Math.cos(a)*parallel.r,.15,Math.sin(a)*parallel.r);q.rotation.y=-a-Math.PI/2;});const live=state.events.has('exterior_swarm'),age=state.time-(state.swarmAt||0);parallel.swarm.forEach((b,i)=>{b.g.visible=live&&age<18;if(!b.g.visible)return;let p=localPose(state.s-7+age*.85+Math.sin(i*2.4+age)*1.2,-5.2+Math.cos(i*2.1+age*1.7)*1.4,F+1.5+Math.sin(i*3+age*1.9)*.8);b.g.position.copy(p.p);b.g.quaternion.copy(p.q);b.wings.forEach((w,j)=>w.rotation.x=Math.sin(age*80+i)*(j?1:-1));});}
+    if(mini){mini.parts.forEach((q,i)=>{let a=2*Math.PI*phase(trainCurrentU-i*.075);q.position.set(.49*Math.cos(a),1.085,.49*Math.sin(a));q.rotation.y=-a-Math.PI/2;});}
   }
   function cameraUpdate(dt){
     let s=state.s,z=state.z,face=state.face,cp,at;
-    const aim=localPose(s,z,F+(state.seated?.95:1.12));
-    if(state.mode==='Seat'){cp=localPose(s+2.1,-.55,F+1.30).p;at=aim.p;}
-    else if(state.mode==='Orbit'){state.orbit+=dt*.60;cp=localPose(s+2.1*Math.cos(state.orbit),clamp(z+.95*Math.sin(state.orbit),-1.38,1.38),F+1.40).p;at=aim.p;}
-    else if(state.mode==='Window'){cp=localPose(s-1.1,-.55,F+1.55).p;at=localPose(s+.2,5,F+1.25).p;}
+    const inside=(x,zz,y)=>localPose(clamp(x,-L()/2+.26,(built.length-1)*span()+L()/2-.26),zz,y);const aim=localPose(s,z,F+1.12-.17*state.seatBlend);
+    if(state.mode==='Seat'){cp=inside(s+2.15,-.45,F+1.42).p;at=aim.p;}
+    else if(state.mode==='Orbit'){state.orbit+=dt*.40;let a=state.orbit;cp=inside(s+2.15*Math.cos(a),-.37-.34*Math.sin(a),F+1.40).p;at=aim.p;}
+    else if(state.mode==='Window'){cp=inside(s-1.1,.55,F+1.55).p;at=localPose(s+.2,-5,F+1.25).p;}
     else if(state.mode==='Exterior'){cp=localPose(s-3.2,-9.6,F+4.6).p;at=localPose(s+.9,0,F+1.5).p;}
     else if(state.mode==='Witness'){cp=localPose((state.car-1)*span()-L()/2+.6,-.8,F+1.78).p;at=aim.p;}
     else if(state.mode==='Model'&&mini){cp=localPose((built.length-1)*span()-1.5,-.55,F+2.0).p;at=mini.root.localToWorld(V(0,1.0,0));}
-    else{cp=localPose(s-face*2.0,clamp(z-.36,-1.3,1.3),F+1.48).p;at=localPose(s+face*.45,z,F+1.05).p;}
+    else{cp=inside(s-face*2.0,clamp(z-.36,-.60,.60),F+1.48).p;at=localPose(s+face*.45,z,F+1.05).p;}
     let look=at.clone().sub(cp);if(state.yaw||state.pitch){look.applyAxisAngle(V(0,1,0),state.yaw);let right=new T.Vector3().crossVectors(look,V(0,1,0)).normalize();if(right.lengthSq()>.1)look.applyAxisAngle(right,state.pitch);at=cp.clone().add(look);}
-    const alpha=1-Math.exp(-dt*(state.mode==='Exterior'?2.8:7.5));if(!camP){camP=cp.clone();camA=at.clone();}else{camP.lerp(cp,alpha);camA.lerp(at,alpha);}
+    const ref=localPose(s,0,F);const alpha=1-Math.exp(-dt*(state.mode==='Exterior'?2.8:7.5));if(!camP){camP=cp.clone();camA=at.clone();}else{if(camRef){let dq=ref.q.clone().multiply(camRef.q.clone().invert());camP.sub(camRef.p).applyQuaternion(dq).add(ref.p);camA.sub(camRef.p).applyQuaternion(dq).add(ref.p);}camP.lerp(cp,alpha);camA.lerp(at,alpha);}camRef=ref;
     camera.position.copy(camP);camera.lookAt(camA);controls.target.copy(camA);
     camera.fov=state.mode==='Exterior'?54:66;camera.near=.035;camera.updateProjectionMatrix();
   }
   const feedCam=new T.PerspectiveCamera(69,16/9,.045,250);
   function updateFeed(now){
     if(!feeds.length||now-feedAt<250)return;feedAt=now;
-    let f=feeds[feedCursor++%feeds.length],s,cp,at;
+    let f=feeds[feedCursor++%feeds.length],s,cp,at;if(f.target===1&&state.time>12&&f.hasFrame)return;
     if(f.target===4||f.target===0){s=state.s;cp=localPose(s-4,-10,F+5).p;at=localPose(s+3,0,F+1).p;}
     else {let j=Math.min(built.length-1,f.target-1);s=j*span();cp=localPose(s-3.8,-.72,F+1.9).p;at=localPose(s+2,0,F+1.1).p;}
     feedCam.position.copy(cp);feedCam.lookAt(at);const old=renderer.getRenderTarget();const visible=feeds.map(x=>x.screen.visible);
-    try{feeds.forEach(x=>x.screen.visible=false);renderer.setRenderTarget(f.rt);baseRender(scene,feedCam);}finally{renderer.setRenderTarget(old);feeds.forEach((x,i)=>x.screen.visible=visible[i]);}
+    try{feeds.forEach(x=>x.screen.visible=false);renderer.setRenderTarget(f.rt);baseRender(scene,feedCam);f.hasFrame=true;}finally{renderer.setRenderTarget(old);feeds.forEach((x,i)=>x.screen.visible=visible[i]);}
   }
   function setFilm(active){
     if(active===state.active)return;
@@ -255,7 +257,7 @@
   function toggleRecord(){
     if(state.recording){stopRecord();return;}
     if(!renderer.domElement.captureStream||!window.MediaRecorder){status.textContent='Recording unsupported by this browser.';return;}
-    try{let stream=renderer.domElement.captureStream(24);if(sound?.dest)sound.dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));const type=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));record=new MediaRecorder(stream,type?{mimeType:type,videoBitsPerSecond:6000000}:undefined);recordChunks=[];record.ondataavailable=e=>{if(e.data.size)recordChunks.push(e.data);};record.onstop=()=>{let mime=record.mimeType||'video/webm';download(new Blob(recordChunks,{type:mime}),'bees-on-a-train-'+Date.now()+(mime.includes('mp4')?'.mp4':'.webm'));stream.getTracks().filter(t=>t.kind==='video').forEach(t=>t.stop());saveLog();};record.start(1000);state.recording=true;info('record_start');}catch(e){status.textContent='Recorder: '+e.message;}
+    try{let stream=renderer.domElement.captureStream(24);if(sound?.dest)sound.dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));const chunks=[];const type=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));record=new MediaRecorder(stream,type?{mimeType:type,videoBitsPerSecond:6000000}:undefined);const rec=record;recordChunks=chunks;rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};rec.onstop=()=>{let mime=rec.mimeType||'video/webm';download(new Blob(chunks,{type:mime}),'bees-on-a-train-'+Date.now()+(mime.includes('mp4')?'.mp4':'.webm'));stream.getTracks().filter(t=>t.kind==='video').forEach(t=>t.stop());saveLog();};record.start(1000);state.recording=true;info('record_start');}catch(e){status.textContent='Recorder: '+e.message;}
   }
   function stopRecord(){if(record&&record.state!=='inactive'){info('record_stop');record.stop();}state.recording=false;}
   function toggleSound(){if(sound){closeSound();return;}try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;let ac=new A(),dest=ac.createMediaStreamDestination(),mix=ac.createGain();mix.gain.value=.10;mix.connect(ac.destination);mix.connect(dest);let os=ac.createOscillator(),lo=ac.createOscillator(),amp=ac.createGain(),mod=ac.createGain();os.type='triangle';os.frequency.value=53;lo.frequency.value=4.1;mod.gain.value=.12;lo.connect(mod);mod.connect(amp.gain);amp.gain.value=.25;os.connect(amp);amp.connect(mix);os.start();lo.start();ac.resume();sound={ac,dest,mix,os,lo};}catch(e){status.textContent='Audio unavailable';}}
@@ -275,13 +277,13 @@
     `;
   document.head.appendChild(css);
   const hud=document.createElement('div');hud.id='trainFilmHUD';hud.hidden=true;
-  hud.innerHTML=`<div class="film-top"><div><div class="film-title">BEES ON A TRAIN / THE SEALED LINE</div><div class="film-status" aria-live="off"></div></div><button data-act="hide" title="Hide interface (H)">HUD</button></div><div class="film-controls"><button data-act="take">▶ Take</button><button data-act="reset">Reset</button><button data-act="sit">Stand / sit</button><div class="film-camera">${modes.map(x=>`<button data-mode="${x}">${x}</button>`).join('')}</div><div class="film-move">${[['w','↑'],['s','↓'],['a','←'],['d','→'],['arrowleft','Look L'],['arrowright','Look R'],['arrowup','Look ↑'],['arrowdown','Look ↓']].map(([k,t])=>`<button data-key="${k}">${t}</button>`).join('')}</div><button data-act="bee">Bee</button><button data-act="scuffle">Scuffle</button><button data-act="train">Train</button><button data-act="sound">Sound</button><button data-act="rec">REC</button><button data-act="still">Still</button><button data-act="log">Ledger</button><button data-act="legacy">Archive</button></div>`;
+  hud.innerHTML=`<div class="film-top"><div><div class="film-title">BEES ON A TRAIN / THE SEALED LINE</div><div class="film-status" aria-live="off"></div></div><button data-act="hide" title="Hide interface (H)">HUD</button></div><div class="film-controls"><button data-act="take">▶ Take</button><button data-act="reset">Reset</button><button data-act="sit">Stand / sit</button><div class="film-camera">${modes.map(x=>`<button data-mode="${x}">${x}</button>`).join('')}</div><div class="film-move">${[['w','↑'],['s','↓'],['a','←'],['d','→'],['arrowleft','Look L'],['arrowright','Look R'],['arrowup','Look ↑'],['arrowdown','Look ↓']].map(([k,t])=>`<button data-key="${k}">${t}</button>`).join('')}</div><button data-act="bee">Bee</button><button data-act="scuffle">Scuffle</button><button data-act="train">Train</button><button data-act="swarm">Swarm</button><button data-act="sound">Sound</button><button data-act="rec">REC</button><button data-act="still">Still</button><button data-act="log">Ledger</button><button data-act="legacy">Archive</button></div>`;
   document.body.appendChild(hud);const status=hud.querySelector('.film-status');const launcher=document.createElement('button');launcher.id='trainFilmLaunch';launcher.textContent='Enter film';document.body.appendChild(launcher);launcher.onclick=()=>setFilm(true);
   function startTake(){if(state.auto){state.auto=false;info('director_paused');return;}resetTake();state.auto=true;info('director_start');}
   hud.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.mode){state.auto=false;mode(b.dataset.mode);return;}let a=b.dataset.act;if(a==='take')startTake();else if(a==='reset')resetTake();else if(a==='hide')hud.classList.toggle('clean');else if(a==='legacy')setFilm(false);else if(a==='rec')toggleRecord();else if(a==='still')capturePending=true;else if(a==='log')saveLog();else if(a==='sound')toggleSound();else if(a)event(a);});
   for(const b of hud.querySelectorAll('[data-key]')){let k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();state.auto=false;state.keys.add(k);b.setPointerCapture(e.pointerId);});let up=()=>state.keys.delete(k);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);}
   const navKeys=new Set(['w','a','s','d','arrowleft','arrowright','arrowup','arrowdown']);
-  window.addEventListener('keydown',e=>{if(!state.active||e.target?.matches?.('input,textarea,select'))return;let k=e.key.toLowerCase();if(navKeys.has(k)){e.preventDefault();state.auto=false;state.keys.add(k);}else if(!e.repeat){if(k===' '){e.preventDefault();event('sit');}else if(k==='f')event('bee');else if(k==='g')event('scuffle');else if(k==='t')event('train');else if(k==='h')hud.classList.toggle('clean');else if(k==='r')toggleRecord();else if(k==='k')capturePending=true;else if(k==='escape'){state.auto=false;hud.classList.remove('clean');}else if(/^[1-7]$/.test(k)){state.auto=false;mode(modes[Number(k)-1]);}}});
+  window.addEventListener('keydown',e=>{if(!state.active||e.target?.matches?.('input,textarea,select'))return;let k=e.key.toLowerCase();if(navKeys.has(k)){e.preventDefault();state.auto=false;state.keys.add(k);}else if(!e.repeat){if(k===' '){e.preventDefault();event('sit');}else if(k==='f')event('bee');else if(k==='g')event('scuffle');else if(k==='t')event('train');else if(k==='b')event('swarm');else if(k==='h')hud.classList.toggle('clean');else if(k==='r')toggleRecord();else if(k==='k')capturePending=true;else if(k==='escape'){state.auto=false;hud.classList.remove('clean');}else if(/^[1-7]$/.test(k)){state.auto=false;mode(modes[Number(k)-1]);}}});
   window.addEventListener('keyup',e=>state.keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>state.keys.clear());
   // Block the old raycast dialogue while filming; its handler is still present in archive mode.
   renderer.domElement.addEventListener('click',e=>{if(state.active){e.stopImmediatePropagation();}},true);
@@ -294,7 +296,7 @@
     const now=performance.now(),dt=clamp((now-last)/1000,0,.05);last=now;state.time+=dt;state.frame++;
     if(built.some(b=>!trainCars.includes(b.c))||terrainRadius!==simParams.trackRadius){setFilm(false);setFilm(true);}
     for(const c of trainCars)c.group.updateMatrixWorld(true);
-    state.walk=0;director(dt);manual(dt);updateBridges();updateActors(dt);cameraUpdate(dt);
+    state.walk=0;director(dt);manual(dt);updateSeat();updateBridges();updateActors(dt);cameraUpdate(dt);
     if(sound){sound.os.frequency.setTargetAtTime(42+simParams.currentSpeed*2,sound.ac.currentTime,.15);sound.lo.frequency.setTargetAtTime(2+simParams.currentSpeed*.45,sound.ac.currentTime,.15);}
     updateFeed(now);baseRender(sc,cam);
     if(capturePending){capturePending=false;renderer.domElement.toBlob(b=>{if(b)download(b,'bees-frame-'+Math.round(state.time*1000)+'.png');},'image/png');}
